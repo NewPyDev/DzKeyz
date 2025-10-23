@@ -19,3 +19,6 @@ rapidfuzz==3.5.2
 
 # Additional utilities
 Pillow==10.0.1
+
+# Production server
+gunicorn==21.2.0

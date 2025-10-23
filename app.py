@@ -3398,4 +3398,11 @@ def download_product_file(order_id):
     return send_file(order['file_or_key_path'], as_attachment=True, download_name=download_name)
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    # Initialize database on startup
+    init_db()
+    
+    # Get port from environment variable (for Render) or default to 5000
+    port = int(os.environ.get('PORT', 5000))
+    
+    # Run the app
+    app.run(debug=False, host='0.0.0.0', port=port)
