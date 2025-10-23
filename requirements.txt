@@ -1,0 +1,21 @@
+# Flask and core dependencies
+Flask==2.3.3
+Werkzeug==2.3.7
+
+# Email service
+resend==0.6.0
+
+# PDF generation
+reportlab==4.0.4
+
+# HTTP requests for Telegram API
+requests==2.31.0
+
+# Environment variables
+python-dotenv==1.0.0
+
+# Fuzzy search
+rapidfuzz==3.5.2
+
+# Additional utilities
+Pillow==10.0.1

@@ -1,0 +1,273 @@
+{% extends "admin_base.html" %}
+
+{% block page_title %}Contact Messages{% endblock %}
+{% block page_heading %}Contact Messages{% endblock %}
+{% block page_description %}View and manage customer contact messages{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Stats Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-3 col-md-6">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50">Total Messages</h6>
+                            <h2 class="mb-0">{{ messages|length }}</h2>
+                        </div>
+                        <i class="bi bi-envelope fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50">New Messages</h6>
+                            <h2 class="mb-0">{{ messages|selectattr('status', 'equalto', 'new')|list|length }}</h2>
+                        </div>
+                        <i class="bi bi-envelope-exclamation fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50">Read Messages</h6>
+                            <h2 class="mb-0">{{ messages|selectattr('status', 'equalto', 'read')|list|length }}</h2>
+                        </div>
+                        <i class="bi bi-envelope-check fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50">Replied</h6>
+                            <h2 class="mb-0">{{ messages|selectattr('status', 'equalto', 'replied')|list|length }}</h2>
+                        </div>
+                        <i class="bi bi-reply fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Messages Table -->
+    <div class="card">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-inbox me-2"></i>Contact Messages
+                </h5>
+                <div class="btn-group" role="group">
+                    <input type="radio" class="btn-check" name="statusFilter" id="all" value="all" checked>
+                    <label class="btn btn-outline-primary btn-sm" for="all">All</label>
+
+                    <input type="radio" class="btn-check" name="statusFilter" id="new" value="new">
+                    <label class="btn btn-outline-warning btn-sm" for="new">New</label>
+
+                    <input type="radio" class="btn-check" name="statusFilter" id="read" value="read">
+                    <label class="btn btn-outline-success btn-sm" for="read">Read</label>
+
+                    <input type="radio" class="btn-check" name="statusFilter" id="replied" value="replied">
+                    <label class="btn btn-outline-info btn-sm" for="replied">Replied</label>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            {% if messages %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Subject</th>
+                            <th>Message</th>
+                            <th>Attachment</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for message in messages %}
+                        <tr class="message-row" data-status="{{ message.status }}">
+                            <td>
+                                <span class="badge bg-secondary">#{{ message.id }}</span>
+                            </td>
+                            <td>
+                                <div class="fw-semibold">{{ message.name }}</div>
+                            </td>
+                            <td>
+                                <a href="mailto:{{ message.email }}" class="text-decoration-none">
+                                    {{ message.email }}
+                                </a>
+                            </td>
+                            <td>
+                                <span class="badge bg-primary">{{ message.subject }}</span>
+                            </td>
+                            <td>
+                                <div class="message-preview" style="max-width: 300px;">
+                                    {{ message.message[:100] }}{% if message.message|length > 100 %}...{% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                {% if message.attachment_path %}
+                                    <i class="bi bi-paperclip text-success" title="Has attachment"></i>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small class="text-muted">
+                                    {% if message.created_at %}
+                                        {{ message.created_at.strftime('%Y-%m-%d %H:%M') if message.created_at.strftime else message.created_at[:16] }}
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </small>
+                            </td>
+                            <td>
+                                {% if message.status == 'new' %}
+                                    <span class="badge bg-warning">New</span>
+                                {% elif message.status == 'read' %}
+                                    <span class="badge bg-success">Read</span>
+                                {% elif message.status == 'replied' %}
+                                    <span class="badge bg-info">Replied</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary btn-sm" 
+                                            onclick="viewMessage({{ message.id }})" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#messageModal"
+                                            title="View Message">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                    {% if message.status == 'new' %}
+                                    <button class="btn btn-outline-success btn-sm" 
+                                            onclick="markAsRead({{ message.id }})"
+                                            title="Mark as Read">
+                                        <i class="bi bi-check"></i>
+                                    </button>
+                                    {% endif %}
+                                    <a href="mailto:{{ message.email }}?subject=Re: {{ message.subject }}" 
+                                       class="btn btn-outline-info btn-sm"
+                                       title="Reply via Email">
+                                        <i class="bi bi-reply"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-inbox display-1 text-muted"></i>
+                <h4 class="text-muted mt-3">No contact messages yet</h4>
+                <p class="text-muted">Messages from your contact form will appear here.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Message View Modal -->
+<div class="modal fade" id="messageModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Contact Message Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="messageModalBody">
+                <!-- Message details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="replyBtn">Reply via Email</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Filter messages by status
+document.querySelectorAll('input[name="statusFilter"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        const status = this.value;
+        const rows = document.querySelectorAll('.message-row');
+        
+        rows.forEach(row => {
+            if (status === 'all' || row.dataset.status === status) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    });
+});
+
+// View message details
+function viewMessage(messageId) {
+    // Find the message row
+    const messageRow = document.querySelector(`tr[data-status] .badge:contains('#${messageId}')`);
+    // For now, we'll use the data from the table
+    // In a real implementation, you might want to fetch full details via AJAX
+    
+    const modalBody = document.getElementById('messageModalBody');
+    modalBody.innerHTML = `
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    `;
+    
+    // Simulate loading message details
+    setTimeout(() => {
+        modalBody.innerHTML = `
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i>
+                Message details would be loaded here. For now, check the table for message content.
+            </div>
+        `;
+    }, 500);
+}
+
+// Mark message as read
+function markAsRead(messageId) {
+    fetch(`/admin/mark-message-read/${messageId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to mark message as read');
+    });
+}
+</script>
+{% endblock %}

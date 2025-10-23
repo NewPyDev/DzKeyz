@@ -1,0 +1,496 @@
+{% extends "admin_base.html" %}
+
+{% block page_title %}Add Product{% endblock %}
+{% block page_heading %}Add Product{% endblock %}
+{% block page_description %}Create a new digital product for your store{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Breadcrumb -->
+            <nav aria-label="breadcrumb" class="mb-4">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a href="{{ url_for('admin_dashboard') }}">Dashboard</a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a href="{{ url_for('admin_products') }}">Products</a>
+                    </li>
+                    <li class="breadcrumb-item active">Add Product</li>
+                </ol>
+            </nav>
+
+            <form method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
+                <!-- Basic Information -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-info-circle me-2"></i>Basic Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="name" class="form-label">Product Name *</label>
+                                <input type="text" class="form-control" id="name" name="name" required>
+                                <div class="invalid-feedback">Please provide a product name.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="price_dzd" class="form-label">Price (DZD) *</label>
+                                <input type="number" class="form-control" id="price_dzd" name="price_dzd" step="0.01" min="0" required>
+                                <div class="invalid-feedback">Please provide a valid price.</div>
+                            </div>
+                            <div class="col-12">
+                                <label for="description" class="form-label">Description</label>
+                                <textarea class="form-control" id="description" name="description" rows="3" placeholder="Describe your product (optional)"></textarea>
+                                <div class="form-text">Help customers understand what they're buying</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Category and Tags -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-tags me-2"></i>Organization
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="category_id" class="form-label">Category</label>
+                                <select class="form-select" id="category_id" name="category_id">
+                                    <option value="">Select a category (optional)</option>
+                                    {% for category in categories %}
+                                    <option value="{{ category.id }}">
+                                        {% if category.icon %}<i class="{{ category.icon }}"></i> {% endif %}{{ category.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">
+                                    <a href="{{ url_for('admin_categories') }}" target="_blank">Manage categories</a>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="tag_ids" class="form-label">Tags</label>
+                                <select class="form-select" id="tag_ids" name="tag_ids" multiple>
+                                    {% for tag in tags %}
+                                    <option value="{{ tag.id }}" data-color="{{ tag.color }}">{{ tag.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">
+                                    Hold Ctrl/Cmd to select multiple tags. <a href="{{ url_for('admin_tags') }}" target="_blank">Manage tags</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visibility and Settings -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-gear me-2"></i>Settings
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="stock_limit" class="form-label">Stock Limit (for keys)</label>
+                                <input type="number" class="form-control" id="stock_limit" name="stock_limit" min="1" 
+                                       placeholder="Leave empty for unlimited">
+                                <div class="form-text">Maximum number of keys/licenses available</div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mt-4">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="is_visible" name="is_visible" checked>
+                                        <label class="form-check-label" for="is_visible">
+                                            <strong>Visible to customers</strong>
+                                        </label>
+                                        <div class="form-text">Uncheck to hide this product from the store</div>
+                                    </div>
+                                    <div class="form-check form-switch mt-3">
+                                        <input class="form-check-input" type="checkbox" id="is_featured" name="is_featured">
+                                        <label class="form-check-label" for="is_featured">
+                                            <strong>Featured product</strong>
+                                        </label>
+                                        <div class="form-text">Featured products appear first on the homepage</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Product Type Selection -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-grid me-2"></i>Product Type
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted mb-3">Choose the type of digital product *</p>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="card h-100 product-type-card">
+                                    <div class="card-body text-center">
+                                        <input type="radio" class="btn-check" name="type" id="type_key" value="key" required>
+                                        <label class="btn btn-outline-primary w-100 h-100 d-flex flex-column align-items-center justify-content-center p-4" for="type_key">
+                                            <i class="bi bi-key-fill fs-1 mb-3"></i>
+                                            <h6 class="fw-semibold">License Keys</h6>
+                                            <p class="text-muted small mb-2">Software licenses, game keys, account credentials</p>
+                                            <ul class="list-unstyled small text-muted">
+                                                <li>• Instant delivery via email/Telegram</li>
+                                                <li>• Individual key management</li>
+                                                <li>• Automatic stock tracking</li>
+                                            </ul>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card h-100 product-type-card">
+                                    <div class="card-body text-center">
+                                        <input type="radio" class="btn-check" name="type" id="type_file" value="file" required>
+                                        <label class="btn btn-outline-success w-100 h-100 d-flex flex-column align-items-center justify-content-center p-4" for="type_file">
+                                            <i class="bi bi-file-earmark-arrow-down-fill fs-1 mb-3"></i>
+                                            <h6 class="fw-semibold">Digital Files</h6>
+                                            <p class="text-muted small mb-2">Documents, images, videos, software files</p>
+                                            <ul class="list-unstyled small text-muted">
+                                                <li>• Secure file hosting</li>
+                                                <li>• Download link delivery</li>
+                                                <li>• Unlimited sales (no stock limits)</li>
+                                            </ul>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Key Content Section -->
+                <div id="key_content_div" class="card mb-4 d-none">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-key me-2"></i>License Keys
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="key_content" class="form-label">Enter Your Keys</label>
+                            <textarea class="form-control font-monospace" id="key_content" name="key_content" rows="8" 
+                                      placeholder="Enter your license keys, one per line:&#10;&#10;KEY-001-ABCD-EFGH&#10;KEY-002-IJKL-MNOP&#10;KEY-003-QRST-UVWX"></textarea>
+                        </div>
+                        <div class="alert alert-info">
+                            <h6 class="alert-heading">
+                                <i class="bi bi-info-circle me-2"></i>Key Management Tips:
+                            </h6>
+                            <ul class="mb-0">
+                                <li>Each key should be on a separate line</li>
+                                <li>Stock count will automatically match the number of keys</li>
+                                <li>Each customer gets exactly one key per order</li>
+                                <li>You can add more keys later by editing the product</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- File Upload Section -->
+                <div id="file_upload_div" class="card mb-4 d-none">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-cloud-upload me-2"></i>Digital File
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="product_file" class="form-label">Upload Your File</label>
+                            <input type="file" class="form-control" id="product_file" name="product_file">
+                            <div class="form-text">Any file type up to 16MB</div>
+                        </div>
+                        
+                        <div class="alert alert-success">
+                            <h6 class="alert-heading">
+                                <i class="bi bi-infinity me-2"></i>Unlimited Digital Copies
+                            </h6>
+                            <p class="mb-0">Digital files can be sold unlimited times since they're just downloads. No stock management needed!</p>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <h6 class="alert-heading">Digital File Features:</h6>
+                            <ul class="mb-0">
+                                <li>♾️ Unlimited sales - digital files never run out</li>
+                                <li>📧 Customers contact support for download links</li>
+                                <li>🔄 You can update the file anytime by editing</li>
+                                <li>📁 Supported: Documents, images, videos, archives, etc.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Product Images Section -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-images me-2"></i>Product Images
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Drag and Drop Upload Area -->
+                        <div class="upload-area border-2 border-dashed rounded-3 p-4 text-center mb-3" id="uploadArea">
+                            <div class="upload-content">
+                                <i class="bi bi-cloud-upload fs-1 text-primary mb-3"></i>
+                                <h6 class="fw-semibold mb-2">Drag & Drop Images Here</h6>
+                                <p class="text-muted mb-3">or click to browse files</p>
+                                <input type="file" class="d-none" id="product_images" name="product_images" multiple accept="image/*">
+                                <button type="button" class="btn btn-primary" onclick="document.getElementById('product_images').click()">
+                                    <i class="bi bi-plus-circle me-2"></i>Choose Images
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <h6 class="alert-heading">
+                                <i class="bi bi-info-circle me-2"></i>Image Guidelines:
+                            </h6>
+                            <ul class="mb-0">
+                                <li>Supported formats: JPG, JPEG, PNG, WebP</li>
+                                <li>Maximum file size: 5MB per image</li>
+                                <li>Upload unlimited images</li>
+                                <li>First image will be used as the main product thumbnail</li>
+                                <li>Drag images to reorder them</li>
+                            </ul>
+                        </div>
+                        
+                        <!-- Image Preview Grid -->
+                        <div id="image-preview" class="row g-3 mt-2"></div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="d-flex gap-3 justify-content-end">
+                    <a href="{{ url_for('admin_products') }}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left me-2"></i>Cancel
+                    </a>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-plus-circle me-2"></i>Create Product
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const keyRadio = document.getElementById('type_key');
+    const fileRadio = document.getElementById('type_file');
+    const keyDiv = document.getElementById('key_content_div');
+    const fileDiv = document.getElementById('file_upload_div');
+    
+    function toggleProductContent() {
+        if (keyRadio.checked) {
+            keyDiv.classList.remove('d-none');
+            fileDiv.classList.add('d-none');
+        } else if (fileRadio.checked) {
+            keyDiv.classList.add('d-none');
+            fileDiv.classList.remove('d-none');
+        } else {
+            keyDiv.classList.add('d-none');
+            fileDiv.classList.add('d-none');
+        }
+    }
+    
+    keyRadio.addEventListener('change', toggleProductContent);
+    fileRadio.addEventListener('change', toggleProductContent);
+    
+    // File upload preview
+    const fileInput = document.getElementById('product_file');
+    fileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        const existingPreview = document.querySelector('.file-preview');
+        if (existingPreview) existingPreview.remove();
+        
+        if (file) {
+            const preview = document.createElement('div');
+            preview.className = 'alert alert-success mt-2 file-preview';
+            preview.innerHTML = `
+                <i class="bi bi-check-circle me-2"></i>
+                <strong>File selected:</strong> ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)
+            `;
+            e.target.parentNode.appendChild(preview);
+        }
+    });
+    
+    // Key counter
+    const keyContent = document.getElementById('key_content');
+    keyContent.addEventListener('input', function(e) {
+        const keys = e.target.value.split('\n').filter(key => key.trim().length > 0);
+        const existingCounter = document.getElementById('key-counter');
+        if (existingCounter) existingCounter.remove();
+        
+        if (keys.length > 0) {
+            const counter = document.createElement('div');
+            counter.id = 'key-counter';
+            counter.className = 'alert alert-info mt-2';
+            counter.innerHTML = `<strong>${keys.length}</strong> keys entered (stock will be set automatically)`;
+            e.target.parentNode.appendChild(counter);
+        }
+    });
+    
+    // Image upload and preview functionality
+    const imageInput = document.getElementById('product_images');
+    const imagePreview = document.getElementById('image-preview');
+    const uploadArea = document.getElementById('uploadArea');
+    let selectedFiles = [];
+
+    // Drag and drop functionality
+    uploadArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        uploadArea.classList.add('border-primary', 'bg-light');
+    });
+
+    uploadArea.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        uploadArea.classList.remove('border-primary', 'bg-light');
+    });
+
+    uploadArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        uploadArea.classList.remove('border-primary', 'bg-light');
+        
+        const files = Array.from(e.dataTransfer.files);
+        handleFiles(files);
+    });
+
+    // File input change
+    imageInput.addEventListener('change', function(e) {
+        const files = Array.from(e.target.files);
+        handleFiles(files);
+    });
+
+    function handleFiles(files) {
+        files.forEach(file => {
+            if (file.type.startsWith('image/')) {
+                if (file.size <= 5 * 1024 * 1024) { // 5MB limit
+                    selectedFiles.push(file);
+                    addImagePreview(file, selectedFiles.length - 1);
+                } else {
+                    showToast(`File ${file.name} is too large (max 5MB)`, 'warning');
+                }
+            } else {
+                showToast(`File ${file.name} is not a valid image format`, 'warning');
+            }
+        });
+        updateFileInput();
+    }
+
+    function addImagePreview(file, index) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const col = document.createElement('div');
+            col.className = 'col-lg-3 col-md-4 col-sm-6';
+            col.innerHTML = `
+                <div class="card image-preview-card" data-index="${index}">
+                    <div class="position-relative">
+                        <img src="${e.target.result}" class="card-img-top" style="height: 150px; object-fit: cover;">
+                        <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 m-2" 
+                                onclick="removeImage(${index})">
+                            <i class="bi bi-x"></i>
+                        </button>
+                        ${index === 0 ? '<span class="badge bg-primary position-absolute bottom-0 start-0 m-2">Main Image</span>' : ''}
+                    </div>
+                    <div class="card-body p-2">
+                        <small class="text-muted text-truncate d-block">${file.name}</small>
+                        <small class="text-muted">${(file.size / 1024 / 1024).toFixed(2)} MB</small>
+                    </div>
+                </div>
+            `;
+            imagePreview.appendChild(col);
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function removeImage(index) {
+        selectedFiles.splice(index, 1);
+        updateImagePreview();
+        updateFileInput();
+    }
+
+    function updateImagePreview() {
+        imagePreview.innerHTML = '';
+        selectedFiles.forEach((file, index) => {
+            addImagePreview(file, index);
+        });
+    }
+
+    function updateFileInput() {
+        // Create new FileList
+        const dt = new DataTransfer();
+        selectedFiles.forEach(file => dt.items.add(file));
+        imageInput.files = dt.files;
+    }
+
+    // Make removeImage globally available
+    window.removeImage = removeImage;
+
+    function showToast(message, type = 'info') {
+        // Simple toast notification
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+        toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        toast.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        }, 5000);
+    }
+    
+    // Form validation
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        const selectedType = document.querySelector('input[name="type"]:checked');
+        
+        if (!selectedType) {
+            e.preventDefault();
+            alert('Please select a product type (License Keys or Digital Files)');
+            return false;
+        }
+        
+        if (selectedType.value === 'key') {
+            const keyContentValue = document.getElementById('key_content').value.trim();
+            if (!keyContentValue) {
+                e.preventDefault();
+                alert('Please enter at least one license key');
+                return false;
+            }
+        } else if (selectedType.value === 'file') {
+            const fileInputEl = document.getElementById('product_file');
+            if (!fileInputEl.files.length) {
+                e.preventDefault();
+                alert('Please upload a digital file');
+                return false;
+            }
+        }
+        
+        // Show loading state
+        const submitBtn = form.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Creating Product...';
+    });
+});
+</script>
+{% endblock %}

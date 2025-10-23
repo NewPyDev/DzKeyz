@@ -1,0 +1,359 @@
+{% extends "base.html" %}
+
+{% block title %}{{ product.name }} - {{ config.STORE_NAME }}{% endblock %}
+{% block description %}{{ product.description[:150] if product.description else 'Premium digital product with instant
+delivery' }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+            <li class="breadcrumb-item active">{{ product.name }}</li>
+        </ol>
+    </nav>
+
+    <div class="row g-5">
+        <!-- Product Images -->
+        <div class="col-lg-6">
+            {% if product.image_urls and product.image_urls|length > 1 %}
+            <!-- Multiple images - show carousel with modal -->
+            <div id="productCarousel" class="carousel slide mb-3" data-bs-ride="carousel">
+                <div class="carousel-inner rounded-3 overflow-hidden">
+                    {% for image_url in product.image_urls %}
+                    <div class="carousel-item {% if loop.first %}active{% endif %}">
+                        <img src="{{ image_url }}" class="d-block w-100 cursor-pointer" alt="{{ product.name }}"
+                            style="height: 400px; object-fit: cover;" data-image-url="{{ image_url }}"
+                            data-index="{{ loop.index0 }}"
+                            onclick="openImageModal(this.dataset.imageUrl, parseInt(this.dataset.index))">
+                    </div>
+                    {% endfor %}
+                </div>
+                {% if product.image_urls|length > 1 %}
+                <button class="carousel-control-prev" type="button" data-bs-target="#productCarousel"
+                    data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon"></span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#productCarousel"
+                    data-bs-slide="next">
+                    <span class="carousel-control-next-icon"></span>
+                </button>
+                {% endif %}
+
+                <!-- Zoom indicator -->
+                <div class="position-absolute top-0 end-0 m-3">
+                    <span class="badge bg-dark bg-opacity-75">
+                        <i class="bi bi-zoom-in me-1"></i>Click to enlarge
+                    </span>
+                </div>
+            </div>
+
+            <!-- Thumbnail navigation -->
+            <div class="row g-2">
+                {% for image_url in product.image_urls %}
+                <div class="col-3">
+                    <img src="{{ image_url }}" class="img-thumbnail cursor-pointer thumbnail-nav"
+                        data-bs-target="#productCarousel" data-bs-slide-to="{{ loop.index0 }}"
+                        data-image-url="{{ image_url }}" data-index="{{ loop.index0 }}"
+                        onclick="openImageModal(this.dataset.imageUrl, parseInt(this.dataset.index))"
+                        alt="{{ product.name }}" style="height: 80px; object-fit: cover;">
+                </div>
+                {% endfor %}
+            </div>
+            {% elif product.main_image %}
+            <!-- Single image -->
+            <div class="text-center position-relative">
+                <img src="{{ product.main_image }}" class="img-fluid rounded-3 cursor-pointer" alt="{{ product.name }}"
+                    style="max-height: 400px; width: 100%; object-fit: cover;" data-image-url="{{ product.main_image }}"
+                    data-index="0" onclick="openImageModal(this.dataset.imageUrl, parseInt(this.dataset.index))">
+                <div class="position-absolute top-0 end-0 m-3">
+                    <span class="badge bg-dark bg-opacity-75">
+                        <i class="bi bi-zoom-in me-1"></i>Click to enlarge
+                    </span>
+                </div>
+            </div>
+            {% else %}
+            <!-- No image - show icon -->
+            <div class="bg-light rounded-3 d-flex align-items-center justify-content-center" style="height: 400px;">
+                {% if product.type == 'key' %}
+                <i class="bi bi-key-fill text-primary" style="font-size: 5rem;"></i>
+                {% else %}
+                <i class="bi bi-file-earmark-arrow-down text-primary" style="font-size: 5rem;"></i>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Product Information -->
+        <div class="col-lg-6">
+            <div class="sticky-top" style="top: 2rem;">
+                <!-- Product Header -->
+                <div class="mb-4">
+                    <div class="d-flex align-items-center mb-2">
+                        <span class="badge bg-{{ 'primary' if product.type == 'key' else 'success' }} me-2">
+                            {{ 'License Key' if product.type == 'key' else 'Digital File' }}
+                        </span>
+                        {% if product.type == 'key' %}
+                        {% if product.stock_count > 0 %}
+                        <span class="badge bg-success">
+                            <i class="bi bi-check-circle me-1"></i>{{ product.stock_count }} available
+                        </span>
+                        {% else %}
+                        <span class="badge bg-danger">
+                            <i class="bi bi-x-circle me-1"></i>Out of stock
+                        </span>
+                        {% endif %}
+                        {% else %}
+                        <span class="badge bg-info">
+                            <i class="bi bi-infinity me-1"></i>Digital copies
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <h1 class="display-5 fw-bold mb-3">{{ product.name }}</h1>
+
+                    <div class="mb-4">
+                        <span class="display-4 fw-bold text-primary">{{ "{:,.0f}".format(product.price_dzd) }}
+                            DZD</span>
+                    </div>
+                </div>
+
+                <!-- Product Description -->
+                {% if product.description %}
+                <div class="mb-4">
+                    <h5 class="fw-semibold mb-3">Description</h5>
+                    <p class="text-muted lh-lg">{{ product.description }}</p>
+                </div>
+                {% endif %}
+
+                <!-- What's Included -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h6 class="card-title fw-semibold mb-3">
+                            <i class="bi bi-check-circle text-success me-2"></i>What's Included
+                        </h6>
+                        <ul class="list-unstyled mb-0">
+                            {% if product.type == 'key' %}
+                            <li class="mb-2"><i class="bi bi-check text-success me-2"></i>Original license key</li>
+                            <li class="mb-2"><i class="bi bi-check text-success me-2"></i>Instant email delivery</li>
+                            <li class="mb-2"><i class="bi bi-check text-success me-2"></i>Telegram notification</li>
+                            <li class="mb-0"><i class="bi bi-check text-success me-2"></i>24/7 support</li>
+                            {% else %}
+                            <li class="mb-2"><i class="bi bi-check text-success me-2"></i>Digital file download</li>
+                            <li class="mb-2"><i class="bi bi-check text-success me-2"></i>Secure download link</li>
+                            <li class="mb-2"><i class="bi bi-check text-success me-2"></i>Lifetime access</li>
+                            <li class="mb-0"><i class="bi bi-check text-success me-2"></i>24/7 support</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Delivery Information -->
+                <div class="alert alert-info mb-4">
+                    <div class="d-flex align-items-start">
+                        <i class="bi bi-info-circle me-2 mt-1"></i>
+                        <div>
+                            <strong>Delivery:</strong> Your {{ 'license key' if product.type == 'key' else 'download
+                            link' }} will be sent within 5-15 minutes after payment confirmation.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Purchase Button -->
+                <div class="d-grid gap-2 mb-4">
+                    {% if product.type == 'file' or product.stock_count > 0 %}
+                    <a href="{{ url_for('buy_product', product_id=product.id) }}" class="btn btn-primary btn-lg">
+                        <i class="bi bi-cart-plus me-2"></i>Buy Now - {{ "{:,.0f}".format(product.price_dzd) }} DZD
+                    </a>
+                    {% else %}
+                    <button class="btn btn-secondary btn-lg" disabled>
+                        <i class="bi bi-x-circle me-2"></i>Out of Stock
+                    </button>
+                    {% endif %}
+                </div>
+
+                <!-- Trust Badges -->
+                <div class="row g-2 text-center">
+                    <div class="col-4">
+                        <div class="p-2">
+                            <i class="bi bi-shield-check text-success fs-4 d-block mb-1"></i>
+                            <small class="text-muted">SSL Secured</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="p-2">
+                            <i class="bi bi-lightning-charge text-warning fs-4 d-block mb-1"></i>
+                            <small class="text-muted">Instant Delivery</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="p-2">
+                            <i class="bi bi-headset text-info fs-4 d-block mb-1"></i>
+                            <small class="text-muted">24/7 Support</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Related Products -->
+    {% if related_products %}
+    <div class="mt-5 pt-5 border-top">
+        <h3 class="fw-bold mb-4">Related Products</h3>
+        <div class="row g-4">
+            {% for related in related_products %}
+            <div class="col-lg-4 col-md-6">
+                <div class="card h-100 product-card">
+                    <a href="{{ url_for('product_details', product_id=related.id) }}" class="text-decoration-none">
+                        {% if related.main_image %}
+                        <img src="{{ related.main_image }}" class="card-img-top" alt="{{ related.name }}"
+                            style="height: 200px; object-fit: cover;">
+                        {% else %}
+                        <div class="bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                            {% if related.type == 'key' %}
+                            <i class="bi bi-key-fill text-primary" style="font-size: 2rem;"></i>
+                            {% else %}
+                            <i class="bi bi-file-earmark-arrow-down text-primary" style="font-size: 2rem;"></i>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </a>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h6 class="card-title fw-semibold mb-0">
+                                <a href="{{ url_for('product_details', product_id=related.id) }}"
+                                    class="text-decoration-none text-dark">
+                                    {{ related.name }}
+                                </a>
+                            </h6>
+                            <span class="badge bg-{{ 'primary' if related.type == 'key' else 'success' }} ms-2">
+                                {{ 'Key' if related.type == 'key' else 'File' }}
+                            </span>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="fw-bold text-primary">{{ "{:,.0f}".format(related.price_dzd) }} DZD</div>
+                            <a href="{{ url_for('buy_product', product_id=related.id) }}"
+                                class="btn btn-sm btn-outline-primary">
+                                Buy Now
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Image Modal -->
+<div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content bg-transparent border-0">
+            <div class="modal-body p-0">
+                <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3"
+                    data-bs-dismiss="modal" style="z-index: 1060;"></button>
+
+                <!-- Image Carousel in Modal -->
+                <div id="modalCarousel" class="carousel slide" data-bs-ride="false">
+                    <div class="carousel-inner">
+                        {% for image_url in product.image_urls %}
+                        <div class="carousel-item {% if loop.first %}active{% endif %}">
+                            <img src="{{ image_url }}" class="d-block w-100 rounded" alt="{{ product.name }}"
+                                style="max-height: 90vh; object-fit: contain;">
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% if product.image_urls and product.image_urls|length > 1 %}
+                    <button class="carousel-control-prev" type="button" data-bs-target="#modalCarousel"
+                        data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon"></span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#modalCarousel"
+                        data-bs-slide="next">
+                        <span class="carousel-control-next-icon"></span>
+                    </button>
+
+                    <!-- Image counter -->
+                    <div class="position-absolute bottom-0 start-50 translate-middle-x mb-3">
+                        <span class="badge bg-dark bg-opacity-75" id="imageCounter">
+                            1 / {{ product.image_urls|length }}
+                        </span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Image modal functionality
+    var totalImages = {{ product.image_urls| length if product.image_urls else 1 }};
+
+    function openImageModal(imageSrc, index) {
+        const modal = document.getElementById('imageModal');
+        const modalCarousel = document.getElementById('modalCarousel');
+        const imageCounter = document.getElementById('imageCounter');
+
+        if (modalCarousel) {
+            const bsModalCarousel = new bootstrap.Carousel(modalCarousel);
+            bsModalCarousel.to(index);
+
+            // Update counter
+            if (imageCounter) {
+                imageCounter.textContent = `${index + 1} / ${totalImages}`;
+            }
+
+            // Update counter on slide
+            modalCarousel.addEventListener('slide.bs.carousel', function (e) {
+                if (imageCounter) {
+                    imageCounter.textContent = `${e.to + 1} / ${totalImages}`;
+                }
+            });
+        }
+
+        const bsModal = new bootstrap.Modal(modal);
+        bsModal.show();
+    }
+
+    // Thumbnail navigation for carousel
+    document.addEventListener('DOMContentLoaded', function () {
+        const thumbnails = document.querySelectorAll('.thumbnail-nav');
+        const carousel = document.getElementById('productCarousel');
+
+        if (carousel) {
+            const bsCarousel = new bootstrap.Carousel(carousel);
+
+            thumbnails.forEach((thumb, index) => {
+                thumb.addEventListener('click', function (e) {
+                    e.stopPropagation(); // Prevent modal from opening
+                    bsCarousel.to(index);
+
+                    // Update active thumbnail
+                    thumbnails.forEach(t => t.classList.remove('border-primary'));
+                    this.classList.add('border-primary');
+                });
+            });
+
+            // Set first thumbnail as active
+            if (thumbnails.length > 0) {
+                thumbnails[0].classList.add('border-primary');
+            }
+
+            // Update active thumbnail when carousel slides
+            carousel.addEventListener('slide.bs.carousel', function (e) {
+                thumbnails.forEach(t => t.classList.remove('border-primary'));
+                if (thumbnails[e.to]) {
+                    thumbnails[e.to].classList.add('border-primary');
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

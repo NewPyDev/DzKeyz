@@ -1,0 +1,363 @@
+{% extends "base.html" %}
+
+{% block title %}Buy {{ product.name }} - {{ config.STORE_NAME }}{% endblock %}
+{% block description %}Purchase {{ product.name }} - {{ product.description[:150] if product.description else 'Premium digital product with instant delivery' }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Progress Steps -->
+    <div class="progress-steps mb-5">
+        <div class="progress-step active">
+            <div class="progress-step-number">1</div>
+            <span>Product Details</span>
+        </div>
+        <div class="mx-3 text-muted">→</div>
+        <div class="progress-step">
+            <div class="progress-step-number">2</div>
+            <span>Payment Info</span>
+        </div>
+        <div class="mx-3 text-muted">→</div>
+        <div class="progress-step">
+            <div class="progress-step-number">3</div>
+            <span>Confirmation</span>
+        </div>
+    </div>
+
+    <div class="row g-5">
+        <!-- Product Details -->
+        <div class="col-lg-5">
+            <div class="card">
+                <!-- Product Images -->
+                {% if product.image_urls and product.image_urls|length > 1 %}
+                    <!-- Multiple images - show carousel -->
+                    <div id="productCarousel" class="carousel slide" data-bs-ride="carousel">
+                        <div class="carousel-inner">
+                            {% for image_url in product.image_urls %}
+                            <div class="carousel-item {% if loop.first %}active{% endif %}">
+                                <img src="{{ image_url }}" class="d-block w-100" alt="{{ product.name }}" style="height: 300px; object-fit: cover;">
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% if product.image_urls|length > 1 %}
+                        <button class="carousel-control-prev" type="button" data-bs-target="#productCarousel" data-bs-slide="prev">
+                            <span class="carousel-control-prev-icon"></span>
+                        </button>
+                        <button class="carousel-control-next" type="button" data-bs-target="#productCarousel" data-bs-slide="next">
+                            <span class="carousel-control-next-icon"></span>
+                        </button>
+                        <div class="carousel-indicators">
+                            {% for image_url in product.image_urls %}
+                            <button type="button" data-bs-target="#productCarousel" data-bs-slide-to="{{ loop.index0 }}" 
+                                    {% if loop.first %}class="active"{% endif %}></button>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                {% elif product.main_image %}
+                    <!-- Single image -->
+                    <img src="{{ product.main_image }}" class="card-img-top" alt="{{ product.name }}" style="height: 300px; object-fit: cover;">
+                {% else %}
+                    <!-- No image - show icon -->
+                    <div class="product-image bg-light d-flex align-items-center justify-content-center" style="height: 300px;">
+                        {% if product.type == 'key' %}
+                            <i class="bi bi-key-fill text-primary" style="font-size: 4rem;"></i>
+                        {% else %}
+                            <i class="bi bi-file-earmark-arrow-down text-primary" style="font-size: 4rem;"></i>
+                        {% endif %}
+                    </div>
+                {% endif %}
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h3 class="fw-bold">{{ product.name }}</h3>
+                        <span class="badge bg-{{ 'primary' if product.type == 'key' else 'success' }} fs-6">
+                            {{ 'License Key' if product.type == 'key' else 'Digital File' }}
+                        </span>
+                    </div>
+                    
+                    {% if product.description %}
+                    <p class="text-muted mb-4">{{ product.description }}</p>
+                    {% endif %}
+                    
+                    <div class="row g-3 mb-4">
+                        <div class="col-6">
+                            <div class="text-center p-3 bg-light rounded">
+                                <i class="bi bi-currency-exchange text-primary fs-4 d-block mb-2"></i>
+                                <div class="fw-bold fs-4 text-primary">{{ "{:,.0f}".format(product.price_dzd) }} DZD</div>
+                                <small class="text-muted">Price</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center p-3 bg-light rounded">
+                                {% if product.type == 'key' %}
+                                    <i class="bi bi-box text-success fs-4 d-block mb-2"></i>
+                                    <div class="fw-bold fs-4 text-success">{{ product.stock_count }}</div>
+                                    <small class="text-muted">Available</small>
+                                {% else %}
+                                    <i class="bi bi-infinity text-success fs-4 d-block mb-2"></i>
+                                    <div class="fw-bold fs-4 text-success">∞</div>
+                                    <small class="text-muted">Digital Copies</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- What's Included -->
+                    <div class="bg-light rounded p-3 mb-4">
+                        <h6 class="fw-semibold mb-3">
+                            <i class="bi bi-check-circle text-success me-2"></i>What's Included
+                        </h6>
+                        <ul class="list-unstyled mb-0">
+                            {% if product.type == 'key' %}
+                                <li class="mb-2"><i class="bi bi-check text-success me-2"></i>Original license key</li>
+                                <li class="mb-2"><i class="bi bi-check text-success me-2"></i>Instant email delivery</li>
+                                <li class="mb-2"><i class="bi bi-check text-success me-2"></i>Telegram notification</li>
+                                <li class="mb-0"><i class="bi bi-check text-success me-2"></i>24/7 support</li>
+                            {% else %}
+                                <li class="mb-2"><i class="bi bi-check text-success me-2"></i>Digital file download</li>
+                                <li class="mb-2"><i class="bi bi-check text-success me-2"></i>Secure download link</li>
+                                <li class="mb-2"><i class="bi bi-check text-success me-2"></i>Lifetime access</li>
+                                <li class="mb-0"><i class="bi bi-check text-success me-2"></i>24/7 support</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+
+                    <!-- Delivery Info -->
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Delivery:</strong> Your {{ 'license key' if product.type == 'key' else 'download link' }} will be sent within 5-15 minutes after payment confirmation.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Purchase Form -->
+        <div class="col-lg-7">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-credit-card me-2"></i>Complete Your Purchase
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('submit_order') }}" enctype="multipart/form-data" id="purchaseForm">
+                        <input type="hidden" name="product_id" value="{{ product.id }}">
+                        <!-- Customer Information -->
+                        <div class="mb-4">
+                            <h5 class="fw-semibold mb-3">
+                                <i class="bi bi-person me-2"></i>Customer Information
+                            </h5>
+                            {% if session.get('user_id') %}
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle me-2"></i>
+                                <strong>Logged in as {{ session.user_name }}</strong> - Your information has been pre-filled. 
+                                This order will be linked to your account for easy tracking.
+                            </div>
+                            {% endif %}
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="customer_name" class="form-label">Full Name *</label>
+                                    <input type="text" class="form-control" id="customer_name" name="buyer_name" 
+                                           value="{{ session.user_name if session.get('user_id') else '' }}" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="customer_email" class="form-label">Email Address *</label>
+                                    <input type="email" class="form-control" id="customer_email" name="email" 
+                                           value="{{ session.user_email if session.get('user_id') else '' }}" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="customer_phone" class="form-label">Phone Number *</label>
+                                    <input type="tel" class="form-control" id="customer_phone" name="phone" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="telegram_username" class="form-label">Telegram Username</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">@</span>
+                                        <input type="text" class="form-control" id="telegram_username" name="telegram_username" placeholder="username">
+                                    </div>
+                                    <small class="text-muted">Optional - for faster support</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Payment Information -->
+                        <div class="mb-4">
+                            <h5 class="fw-semibold mb-3">
+                                <i class="bi bi-credit-card me-2"></i>Payment Information
+                            </h5>
+                            
+                            <!-- Payment Methods -->
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-6">
+                                    <div class="card border-primary">
+                                        <div class="card-body text-center">
+                                            <i class="bi bi-phone text-primary fs-2 mb-2"></i>
+                                            <h6 class="fw-semibold">Baridimob</h6>
+                                            <p class="text-muted small mb-2">Mobile payment via Baridimob app</p>
+                                            <code class="bg-light p-2 rounded d-block">{{ payment_config.baridimob_number }}</code>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card border-success">
+                                        <div class="card-body text-center">
+                                            <i class="bi bi-building text-success fs-2 mb-2"></i>
+                                            <h6 class="fw-semibold">CCP Account</h6>
+                                            <p class="text-muted small mb-2">Bank transfer to CCP account</p>
+                                            <code class="bg-light p-2 rounded d-block">{{ payment_config.ccp_account }} (Key: {{ payment_config.ccp_key }})</code>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Payment Instructions -->
+                            <div class="alert alert-warning">
+                                <h6 class="fw-semibold">
+                                    <i class="bi bi-exclamation-triangle me-2"></i>Payment Instructions
+                                </h6>
+                                <ol class="mb-0">
+                                    <li>Send exactly <strong>{{ "{:,.0f}".format(product.price_dzd) }} DZD</strong> to one of the accounts above</li>
+                                    <li>Take a screenshot of the payment confirmation</li>
+                                    <li>Upload the screenshot below and submit this form</li>
+                                    <li>We'll confirm your payment and deliver your product within 15 minutes</li>
+                                </ol>
+                            </div>
+
+                            <!-- Payment Proof Upload -->
+                            <div class="mb-3">
+                                <label for="payment_proof" class="form-label">Payment Proof Screenshot *</label>
+                                <input type="file" class="form-control" id="payment_proof" name="payment_proof" accept="image/*" required>
+                                <small class="text-muted">Upload a clear screenshot of your payment confirmation (PNG, JPG, GIF up to 10MB)</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="payment_phone" class="form-label">Payment Phone Number *</label>
+                                <input type="tel" class="form-control" id="payment_phone" name="payment_phone" required placeholder="Phone number used for payment">
+                                <small class="text-muted">Enter the phone number you used to make the payment</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="payment_method" class="form-label">Payment Method Used *</label>
+                                <select class="form-select" id="payment_method" name="payment_method" required>
+                                    <option value="">Select payment method</option>
+                                    <option value="baridimob">Baridimob</option>
+                                    <option value="ccp">CCP Account</option>
+                                </select>
+                                <small class="text-muted">Select which payment method you used</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="transaction_id" class="form-label">Transaction ID (Optional)</label>
+                                <input type="text" class="form-control" id="transaction_id" name="transaction_id" placeholder="Transaction reference number">
+                                <small class="text-muted">If available, enter the transaction reference from your payment</small>
+                            </div>
+                        </div>
+
+                        <!-- Order Summary -->
+                        <div class="bg-light rounded p-4 mb-4">
+                            <h6 class="fw-semibold mb-3">Order Summary</h6>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>{{ product.name }}</span>
+                                <span>{{ "{:,.0f}".format(product.price_dzd) }} DZD</span>
+                            </div>
+                            <hr>
+                            <div class="d-flex justify-content-between fw-bold fs-5">
+                                <span>Total</span>
+                                <span class="text-primary">{{ "{:,.0f}".format(product.price_dzd) }} DZD</span>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg" id="submitBtn">
+                                <i class="bi bi-shield-check me-2"></i>
+                                Complete Secure Purchase
+                            </button>
+                            <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>Back to Products
+                            </a>
+                        </div>
+
+                        <!-- Security Notice -->
+                        <div class="text-center mt-4">
+                            <small class="text-muted">
+                                <i class="bi bi-shield-lock me-1"></i>
+                                Your information is protected with SSL encryption
+                            </small>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('purchaseForm').addEventListener('submit', function(e) {
+    const submitBtn = document.getElementById('submitBtn');
+    const paymentProof = document.getElementById('payment_proof');
+    
+    // Validate file upload
+    if (!paymentProof.files.length) {
+        e.preventDefault();
+        alert('Please upload your payment proof screenshot.');
+        return;
+    }
+    
+    // Check file size (10MB limit)
+    if (paymentProof.files[0].size > 10 * 1024 * 1024) {
+        e.preventDefault();
+        alert('File size must be less than 10MB.');
+        return;
+    }
+    
+    // Show loading state
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner me-2"></span>Processing Order...';
+});
+
+// File upload preview
+document.getElementById('payment_proof').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    const existingPreview = document.querySelector('.file-preview');
+    if (existingPreview) existingPreview.remove();
+    
+    if (file) {
+        const preview = document.createElement('div');
+        preview.className = 'mt-2 p-3 bg-success bg-opacity-10 border border-success rounded file-preview';
+        preview.innerHTML = `
+            <div class="d-flex align-items-center">
+                <i class="bi bi-check-circle text-success me-2"></i>
+                <span class="text-success fw-medium">${file.name}</span>
+                <span class="text-muted ms-2">(${(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+            </div>
+        `;
+        e.target.parentNode.appendChild(preview);
+    }
+});
+
+// Update progress steps
+function updateProgressStep(step) {
+    document.querySelectorAll('.progress-step').forEach((el, index) => {
+        if (index < step) {
+            el.classList.add('active');
+        } else {
+            el.classList.remove('active');
+        }
+    });
+}
+
+// Form validation feedback
+document.querySelectorAll('input[required]').forEach(input => {
+    input.addEventListener('blur', function() {
+        if (this.value.trim() === '') {
+            this.classList.add('is-invalid');
+        } else {
+            this.classList.remove('is-invalid');
+            this.classList.add('is-valid');
+        }
+    });
+});
+</script>
+{% endblock %}

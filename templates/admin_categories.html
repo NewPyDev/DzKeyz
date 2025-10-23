@@ -1,0 +1,145 @@
+{% extends "admin_base.html" %}
+
+{% block page_title %}Categories{% endblock %}
+{% block page_heading %}Product Categories{% endblock %}
+{% block page_description %}Manage product categories and organization{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Add Category Form -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-plus-circle me-2"></i>Add New Category
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('add_category') }}">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label for="name" class="form-label">Category Name</label>
+                                <input type="text" class="form-control" id="name" name="name" 
+                                       placeholder="e.g., Games, Software, Tools" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="icon" class="form-label">Icon (Bootstrap Icon)</label>
+                                <input type="text" class="form-control" id="icon" name="icon" 
+                                       placeholder="e.g., bi-controller, bi-laptop, bi-tools">
+                                <small class="form-text text-muted">
+                                    <a href="https://icons.getbootstrap.com/" target="_blank">Browse Bootstrap Icons</a>
+                                </small>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="description" class="form-label">Description</label>
+                                <input type="text" class="form-control" id="description" name="description" 
+                                       placeholder="Brief description of the category">
+                            </div>
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-plus me-2"></i>Add Category
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Categories List -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="bi bi-grid me-2"></i>All Categories ({{ categories|length }})
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            {% if categories %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Icon</th>
+                            <th>Name</th>
+                            <th>Description</th>
+                            <th>Products</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for category in categories %}
+                        <tr>
+                            <td>
+                                <span class="badge bg-secondary">#{{ category.id }}</span>
+                            </td>
+                            <td>
+                                {% if category.icon %}
+                                    <i class="{{ category.icon }} fs-4 text-primary"></i>
+                                {% else %}
+                                    <i class="bi bi-folder text-muted"></i>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="fw-semibold">{{ category.name }}</div>
+                            </td>
+                            <td>
+                                <span class="text-muted">{{ category.description or 'No description' }}</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">0 products</span>
+                            </td>
+                            <td>
+                                <small class="text-muted">
+                                    {{ category.created_at[:10] if category.created_at else 'N/A' }}
+                                </small>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary btn-sm" 
+                                            onclick="editCategory({{ category.id }})"
+                                            title="Edit Category">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn btn-outline-danger btn-sm" 
+                                            onclick="deleteCategory({{ category.id }}, '{{ category.name }}')"
+                                            title="Delete Category">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-folder-plus display-1 text-muted"></i>
+                <h4 class="text-muted mt-3">No categories yet</h4>
+                <p class="text-muted">Create your first category to organize your products.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function editCategory(categoryId) {
+    // For now, just show an alert. You can implement a modal edit form later
+    alert('Edit functionality coming soon!');
+}
+
+function deleteCategory(categoryId, categoryName) {
+    if (confirm(`Are you sure you want to delete the category "${categoryName}"? This action cannot be undone.`)) {
+        // For now, just show an alert. You can implement delete functionality later
+        alert('Delete functionality coming soon!');
+    }
+}
+</script>
+{% endblock %}

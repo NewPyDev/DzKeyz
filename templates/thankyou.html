@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+
+{% block title %}Order Confirmed - {{ config.STORE_NAME }}{% endblock %}
+{% block description %}Your order has been successfully submitted and is being processed.{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Success Header -->
+            <div class="text-center mb-5">
+                <div class="bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-4" style="width: 100px; height: 100px;">
+                    <i class="bi bi-check-lg" style="font-size: 3rem;"></i>
+                </div>
+                <h1 class="fw-bold text-success mb-3">Order Confirmed!</h1>
+                <p class="lead text-muted">Thank you for your purchase. Your payment proof has been received and is being processed.</p>
+            </div>
+
+            <!-- Order Details Card -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-receipt me-2"></i>Order Details
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% if order %}
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <h6 class="fw-semibold text-muted mb-2">ORDER INFORMATION</h6>
+                            <div class="mb-3">
+                                <strong>Order ID:</strong> #{{ order.id }}
+                            </div>
+                            <div class="mb-3">
+                                <strong>Product:</strong> {{ order.product_name }}
+                            </div>
+                            <div class="mb-3">
+                                <strong>Amount:</strong> <span class="text-primary fw-bold">{{ "{:,.0f}".format(order.price_dzd) }} DZD</span>
+                            </div>
+                            <div class="mb-3">
+                                <strong>Status:</strong> 
+                                <span class="badge bg-warning">
+                                    <i class="bi bi-clock me-1"></i>Pending Confirmation
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="fw-semibold text-muted mb-2">CUSTOMER INFORMATION</h6>
+                            <div class="mb-3">
+                                <strong>Name:</strong> {{ order.buyer_name }}
+                            </div>
+                            <div class="mb-3">
+                                <strong>Email:</strong> {{ order.email }}
+                            </div>
+                            <div class="mb-3">
+                                <strong>Phone:</strong> {{ order.phone }}
+                            </div>
+                            {% if order.telegram_username %}
+                            <div class="mb-3">
+                                <strong>Telegram:</strong> @{{ order.telegram_username }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Next Steps -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="fw-semibold mb-3">
+                        <i class="bi bi-list-check text-primary me-2"></i>What Happens Next?
+                    </h5>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-start">
+                                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px; min-width: 40px;">
+                                    <span class="fw-bold">1</span>
+                                </div>
+                                <div>
+                                    <h6 class="fw-semibold">Payment Review</h6>
+                                    <p class="text-muted small mb-0">We'll verify your payment proof within 5-15 minutes</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-start">
+                                <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px; min-width: 40px;">
+                                    <span class="fw-bold">2</span>
+                                </div>
+                                <div>
+                                    <h6 class="fw-semibold">Confirmation</h6>
+                                    <p class="text-muted small mb-0">You'll receive an email and Telegram notification</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-start">
+                                <div class="bg-info text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px; min-width: 40px;">
+                                    <span class="fw-bold">3</span>
+                                </div>
+                                <div>
+                                    <h6 class="fw-semibold">Delivery</h6>
+                                    <p class="text-muted small mb-0">Your {{ 'license key' if order and order.product_type == 'key' else 'download link' }} will be delivered instantly</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Important Information -->
+            <div class="alert alert-info">
+                <h6 class="fw-semibold">
+                    <i class="bi bi-info-circle me-2"></i>Important Information
+                </h6>
+                <ul class="mb-0">
+                    <li><strong>Processing Time:</strong> Orders are typically processed within 5-15 minutes during business hours</li>
+                    <li><strong>Email Delivery:</strong> Your product will be sent to {{ order.email if order else 'your email address' }}</li>
+                    {% if order and order.telegram_username %}
+                    <li><strong>Telegram Notification:</strong> You'll also receive a notification on Telegram @{{ order.telegram_username }}</li>
+                    {% endif %}
+                    <li><strong>Support:</strong> Contact us if you don't receive your product within 30 minutes</li>
+                </ul>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <a href="{{ url_for('index') }}" class="btn btn-primary w-100">
+                        <i class="bi bi-house me-2"></i>Return to Home
+                    </a>
+                </div>
+                {% if config.get('TELEGRAM_LINK') %}
+                <div class="col-md-4">
+                    <a href="{{ config.TELEGRAM_LINK }}" class="btn btn-outline-primary w-100" target="_blank">
+                        <i class="bi bi-telegram me-2"></i>Contact Support
+                    </a>
+                </div>
+                {% endif %}
+                {% if config.get('CONTACT_EMAIL') %}
+                <div class="col-md-4">
+                    <a href="mailto:{{ config.CONTACT_EMAIL }}?subject=Order Support - #{{ order.id if order else 'N/A' }}" class="btn btn-outline-success w-100">
+                        <i class="bi bi-envelope me-2"></i>Email Support
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- FAQ Section -->
+            <div class="mt-5">
+                <h5 class="fw-semibold mb-4">Frequently Asked Questions</h5>
+                <div class="accordion" id="faqAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                                How long does it take to receive my product?
+                            </button>
+                        </h2>
+                        <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                Most orders are processed within 5-15 minutes during business hours. You'll receive your product via email and Telegram (if provided) once payment is confirmed.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                                What if I don't receive my product?
+                            </button>
+                        </h2>
+                        <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                If you don't receive your product within 30 minutes, please contact our support team via Telegram or email. We'll resolve the issue immediately.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                                Can I get a refund?
+                            </button>
+                        </h2>
+                        <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                Due to the digital nature of our products, refunds are handled on a case-by-case basis. Please contact support if you're experiencing issues with your purchase.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if order and order.status == 'pending' %}
+<script>
+// Auto-refresh page every 30 seconds to check order status
+setTimeout(function() {
+    // You could implement an AJAX call here to check order status
+    // For now, we'll just show a reminder
+    var alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-info alert-dismissible fade show';
+    alertDiv.innerHTML = '<i class="bi bi-info-circle me-2"></i><strong>Still processing:</strong> Your order is being reviewed. You will be notified once confirmed.<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+    var container = document.querySelector('.container');
+    if (container && container.firstChild) {
+        container.insertBefore(alertDiv, container.firstChild);
+    }
+}, 30000);
+</script>
+{% endif %}
+
+<script>
+// Smooth scroll to top on page load
+if (window.scrollTo) {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+{% endblock %}

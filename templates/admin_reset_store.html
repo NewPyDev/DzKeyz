@@ -1,0 +1,150 @@
+{% extends "admin_base.html" %}
+
+{% block page_title %}Reset Store{% endblock %}
+{% block page_heading %}Reset Store{% endblock %}
+{% block page_description %}Completely reset your store to start fresh{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Warning Header -->
+            <div class="alert alert-danger mb-4">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-danger text-white rounded-3 p-3 me-3">
+                        <i class="bi bi-exclamation-triangle-fill fs-4"></i>
+                    </div>
+                    <div>
+                        <h4 class="alert-heading mb-1">⚠️ Danger Zone</h4>
+                        <p class="mb-0">These actions will permanently delete data and cannot be undone!</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reset Options -->
+            <div class="row g-4">
+                <!-- Option 1: Delete Orders Only -->
+                <div class="col-12">
+                    <div class="card border-warning">
+                        <div class="card-header bg-warning bg-opacity-10">
+                            <h5 class="card-title mb-0 text-warning">
+                                <i class="bi bi-receipt me-2"></i>Delete All Orders Only
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">Remove all customer orders but keep your products. This will allow you to delete products individually if needed.</p>
+                            
+                            <div class="alert alert-warning">
+                                <h6 class="alert-heading">This will delete:</h6>
+                                <ul class="mb-0">
+                                    <li>All customer orders (pending, confirmed, rejected)</li>
+                                    <li>All order history and audit logs</li>
+                                    <li>All payment proof files</li>
+                                    <li>All generated receipts</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="alert alert-success">
+                                <h6 class="alert-heading">This will keep:</h6>
+                                <ul class="mb-0">
+                                    <li>All your products and their files</li>
+                                    <li>All license keys and inventory</li>
+                                    <li>Your admin account and settings</li>
+                                </ul>
+                            </div>
+
+                            <form method="POST" action="{{ url_for('delete_all_orders') }}" class="mt-4">
+                                <div class="mb-3">
+                                    <label for="orders_confirmation" class="form-label">
+                                        Type <code class="bg-light p-1 rounded text-danger">DELETE_ALL_ORDERS</code> to confirm:
+                                    </label>
+                                    <input type="text" class="form-control" id="orders_confirmation" name="confirmation" required
+                                           placeholder="DELETE_ALL_ORDERS">
+                                </div>
+                                <button type="submit" class="btn btn-warning">
+                                    <i class="bi bi-trash me-2"></i>Delete All Orders
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Option 2: Complete Reset -->
+                <div class="col-12">
+                    <div class="card border-danger">
+                        <div class="card-header bg-danger bg-opacity-10">
+                            <h5 class="card-title mb-0 text-danger">
+                                <i class="bi bi-arrow-clockwise me-2"></i>Complete Store Reset
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">Completely wipe your store and start from scratch. This will delete everything except your admin account.</p>
+                            
+                            <div class="alert alert-danger">
+                                <h6 class="alert-heading">⚠️ This will permanently delete:</h6>
+                                <ul class="mb-0">
+                                    <li>All products (keys and files)</li>
+                                    <li>All customer orders and history</li>
+                                    <li>All product files from server</li>
+                                    <li>All license keys and inventory</li>
+                                    <li>All payment proofs and receipts</li>
+                                    <li>All audit logs and activity history</li>
+                                </ul>
+                            </div>
+
+                            <form method="POST" class="mt-4">
+                                <div class="mb-3">
+                                    <label for="reset_confirmation" class="form-label">
+                                        Type <code class="bg-light p-1 rounded text-danger">RESET_MY_STORE</code> to confirm:
+                                    </label>
+                                    <input type="text" class="form-control" id="reset_confirmation" name="confirmation" required
+                                           placeholder="RESET_MY_STORE">
+                                </div>
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="bi bi-exclamation-triangle me-2"></i>Reset Entire Store
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Back Button -->
+            <div class="text-center mt-4">
+                <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left me-2"></i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add confirmation for dangerous actions
+    document.querySelectorAll('form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            const confirmationInput = this.querySelector('input[name="confirmation"]');
+            if (confirmationInput) {
+                const expectedValue = confirmationInput.placeholder;
+                if (confirmationInput.value !== expectedValue) {
+                    e.preventDefault();
+                    alert(`Please type "${expectedValue}" exactly to confirm this action.`);
+                    return false;
+                }
+                
+                // Double confirmation for complete reset
+                if (expectedValue === 'RESET_MY_STORE') {
+                    if (!confirm('Are you absolutely sure? This will delete EVERYTHING and cannot be undone!')) {
+                        e.preventDefault();
+                        return false;
+                    }
+                }
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

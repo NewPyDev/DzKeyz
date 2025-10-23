@@ -1,0 +1,392 @@
+{% extends "admin_base.html" %}
+
+{% block page_title %}Orders{% endblock %}
+{% block page_heading %}Orders{% endblock %}
+{% block page_description %}Manage customer orders and payments{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Stats Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-3 col-md-6">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50">Total Orders</h6>
+                            <h2 class="mb-0">{{ total_orders }}</h2>
+                        </div>
+                        <i class="bi bi-receipt fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50">Pending</h6>
+                            <h2 class="mb-0">{{ pending_orders }}</h2>
+                        </div>
+                        <i class="bi bi-clock fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50">Confirmed</h6>
+                            <h2 class="mb-0">{{ confirmed_orders }}</h2>
+                        </div>
+                        <i class="bi bi-check-circle fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50">Rejected</h6>
+                            <h2 class="mb-0">{{ rejected_orders }}</h2>
+                        </div>
+                        <i class="bi bi-x-circle fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="GET" action="{{ url_for('admin_orders') }}" class="d-flex gap-2">
+                        <div class="flex-grow-1">
+                            <input type="text" name="search" value="{{ search_query or '' }}" 
+                                   placeholder="Search by Order ID (e.g., 10 or #10), Customer Name, or Email" 
+                                   class="form-control">
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-search me-1"></i>Search
+                        </button>
+                        {% if search_query %}
+                        <a href="{{ url_for('admin_orders') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle me-1"></i>Clear
+                        </a>
+                        {% endif %}
+                    </form>
+                    {% if search_query %}
+                    <small class="text-muted mt-2 d-block">
+                        <i class="bi bi-info-circle me-1"></i>Showing results for: "{{ search_query }}"
+                    </small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Orders Table -->
+    <div class="card">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-list-ul me-2"></i>{% if search_query %}Search Results{% else %}All Orders{% endif %}
+                </h5>
+                <div class="btn-group" role="group">
+                    <input type="radio" class="btn-check" name="statusFilter" id="all" value="all" checked>
+                    <label class="btn btn-outline-primary btn-sm" for="all">All</label>
+
+                    <input type="radio" class="btn-check" name="statusFilter" id="pending" value="pending">
+                    <label class="btn btn-outline-warning btn-sm" for="pending">Pending</label>
+
+                    <input type="radio" class="btn-check" name="statusFilter" id="confirmed" value="confirmed">
+                    <label class="btn btn-outline-success btn-sm" for="confirmed">Confirmed</label>
+
+                    <input type="radio" class="btn-check" name="statusFilter" id="rejected" value="rejected">
+                    <label class="btn btn-outline-danger btn-sm" for="rejected">Rejected</label>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            {% if orders %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Customer</th>
+                            <th>Product</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                        <tr class="order-row" data-status="{{ order.status }}">
+                            <td class="fw-bold">#{{ order.id }}</td>
+                            <td>
+                                <div>
+                                    <div class="fw-medium">{{ order.buyer_name }}</div>
+                                    <small class="text-muted">{{ order.email }}</small>
+                                    {% if order.phone %}
+                                    <br><small class="text-muted">{{ order.phone }}</small>
+                                    {% endif %}
+                                    {% if order.telegram_username %}
+                                    <br><small class="text-muted">@{{ order.telegram_username }}</small>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <div>
+                                    <div class="fw-medium">{{ order.product_name }}</div>
+                                    <span
+                                        class="badge bg-{{ 'primary' if order.product_type == 'key' else 'success' }} badge-sm">
+                                        {{ 'Key' if order.product_type == 'key' else 'File' }}
+                                    </span>
+                                </div>
+                            </td>
+                            <td class="fw-bold text-primary">{{ "{:,.0f}".format(order.price_dzd) }} DZD</td>
+                            <td>
+                                {% if order.status == 'pending' %}
+                                <span class="badge bg-warning">
+                                    <i class="bi bi-clock me-1"></i>Pending
+                                </span>
+                                {% elif order.status == 'confirmed' %}
+                                <span class="badge bg-success">
+                                    <i class="bi bi-check-circle me-1"></i>Confirmed
+                                </span>
+                                {% else %}
+                                <span class="badge bg-danger">
+                                    <i class="bi bi-x-circle me-1"></i>Rejected
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="text-muted">
+                                {% if order.created_at_display %}
+                                {{ order.created_at_display }}
+                                {% elif order.created_at %}
+                                {% if order.created_at.strftime %}
+                                {{ order.created_at.strftime('%m/%d %H:%M') }}
+                                {% else %}
+                                {{ order.created_at[:16] }}
+                                {% endif %}
+                                {% else %}
+                                N/A
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    {% if order.status == 'pending' %}
+                                    <a href="{{ url_for('confirm_order', order_id=order.id) }}"
+                                        class="btn btn-success btn-sm" title="Confirm Order">
+                                        <i class="bi bi-check"></i>
+                                    </a>
+                                    <a href="{{ url_for('reject_order', order_id=order.id) }}"
+                                        class="btn btn-danger btn-sm" title="Reject Order">
+                                        <i class="bi bi-x"></i>
+                                    </a>
+                                    {% endif %}
+                                    {% if order.payment_proof_path %}
+                                    <button type="button" class="btn btn-info btn-sm"
+                                        onclick="viewPaymentProof('{{ order.payment_proof_path }}', '{{ order.id }}')"
+                                        title="View Payment Proof ({{ order.payment_proof_path }})">
+                                        <i class="bi bi-image"></i>
+                                    </button>
+                                    {% endif %}
+                                    {% if order.status == 'confirmed' and order.receipt_path %}
+                                    <a href="{{ url_for('download_receipt', order_id=order.id) }}"
+                                        class="btn btn-secondary btn-sm" title="Download Receipt">
+                                        <i class="bi bi-download"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <!-- Empty State -->
+            <div class="text-center py-5">
+                <i class="bi bi-receipt text-muted" style="font-size: 4rem;"></i>
+                <h4 class="text-muted mt-3">No orders yet</h4>
+                <p class="text-muted">Orders will appear here once customers start purchasing your products.</p>
+                <a href="{{ url_for('admin_products') }}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-2"></i>Add Products
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Payment Proof Modal -->
+<div class="modal fade" id="paymentProofModal" tabindex="-1" aria-labelledby="paymentProofModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="paymentProofModalLabel">Payment Proof - Order #<span
+                        id="orderIdSpan"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="paymentProofImage" src="" alt="Payment Proof" class="img-fluid rounded" 
+                     onerror="this.style.display='none'; document.getElementById('imageError').style.display='block';">
+                <div id="imageError" style="display: none;" class="text-center p-4">
+                    <i class="bi bi-exclamation-triangle text-warning fs-1"></i>
+                    <p class="mt-2 text-muted">Unable to load payment proof image</p>
+                    <small class="text-muted">The image file may have been moved or deleted</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Filter orders by status
+    document.addEventListener('DOMContentLoaded', function () {
+        const filterButtons = document.querySelectorAll('input[name="statusFilter"]');
+        const orderRows = document.querySelectorAll('.order-row');
+
+        filterButtons.forEach(button => {
+            button.addEventListener('change', function () {
+                const filterValue = this.value;
+
+                orderRows.forEach(row => {
+                    if (filterValue === 'all' || row.dataset.status === filterValue) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            });
+        });
+    });
+
+    // View payment proof
+    function viewPaymentProof(imagePath, orderId) {
+        document.getElementById('orderIdSpan').textContent = orderId;
+        
+        // Handle different path formats
+        let imageUrl;
+        let filename;
+        
+        // Clean up the image path to get just the filename
+        if (imagePath.startsWith('uploads/') || imagePath.startsWith('uploads\\')) {
+            // If path is 'uploads/filename.jpg' or 'uploads\filename.jpg', extract just the filename
+            filename = imagePath.replace(/^uploads[\/\\]/, '');
+        } else if (imagePath.includes('/') || imagePath.includes('\\')) {
+            // If it's a full path, extract just the filename
+            filename = imagePath.split(/[\/\\]/).pop();
+        } else if (imagePath.startsWith('uploads')) {
+            // Handle case where path is 'uploadsfilename.jpg' (no separator)
+            filename = imagePath.replace(/^uploads/, '');
+        } else {
+            // If it's just a filename
+            filename = imagePath;
+        }
+        
+        // Use the dedicated admin payment proof route
+        imageUrl = '/admin/payment-proof/' + filename;
+        
+        const imgElement = document.getElementById('paymentProofImage');
+        const errorElement = document.getElementById('imageError');
+        
+        // Reset display states
+        imgElement.style.display = 'block';
+        errorElement.style.display = 'none';
+        
+        // Add load event listeners
+        imgElement.onload = function() {
+            console.log('✅ Image loaded successfully:', imageUrl);
+            imgElement.style.display = 'block';
+            errorElement.style.display = 'none';
+        };
+        
+        imgElement.onerror = function() {
+            console.log('❌ Image failed to load:', imageUrl);
+            imgElement.style.display = 'none';
+            errorElement.style.display = 'block';
+            
+            // Try alternative URL formats
+            console.log('🔄 Trying alternative URL formats...');
+            
+            const alternatives = [
+                '/uploads/' + filename,
+                '/test-upload/' + filename,
+                '/uploads/' + imagePath,
+                '/test-upload/' + imagePath
+            ];
+            
+            let altIndex = 0;
+            
+            function tryNextAlternative() {
+                if (altIndex >= alternatives.length) {
+                    console.log('❌ All alternative URLs failed');
+                    errorElement.innerHTML = `
+                        <i class="bi bi-exclamation-triangle text-warning fs-1"></i>
+                        <p class="mt-2 text-muted">Unable to load payment proof image</p>
+                        <small class="text-muted">Tried URLs:</small><br>
+                        <small class="text-muted">1. ${imageUrl}</small><br>
+                        ${alternatives.map((url, i) => `<small class="text-muted">${i + 2}. ${url}</small><br>`).join('')}
+                        <small class="text-muted">Original path: ${imagePath}</small><br>
+                        <small class="text-muted">Extracted filename: ${filename}</small>
+                    `;
+                    return;
+                }
+                
+                const altUrl = alternatives[altIndex];
+                console.log(`Trying alternative URL ${altIndex + 1}:`, altUrl);
+                
+                const testImg = new Image();
+                testImg.onload = function() {
+                    console.log('✅ Alternative URL works:', altUrl);
+                    imgElement.src = altUrl;
+                    imgElement.style.display = 'block';
+                    errorElement.style.display = 'none';
+                };
+                testImg.onerror = function() {
+                    console.log('❌ Alternative URL failed:', altUrl);
+                    altIndex++;
+                    tryNextAlternative();
+                };
+                testImg.src = altUrl;
+            }
+            
+            tryNextAlternative();
+        };
+        
+        imgElement.src = imageUrl;
+        console.log('Loading payment proof image:', imageUrl);
+        console.log('Original image path:', imagePath);
+        console.log('Extracted filename:', filename);
+
+        const modal = new bootstrap.Modal(document.getElementById('paymentProofModal'));
+        modal.show();
+    }
+
+    // Auto-refresh for pending orders
+    var pendingOrders = {{ pending_orders|default (0) }};
+    if (pendingOrders > 0) {
+        setInterval(function () {
+            location.reload();
+        }, 30000); // Refresh every 30 seconds if there are pending orders
+    }
+</script>
+{% endblock %}

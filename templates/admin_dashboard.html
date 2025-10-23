@@ -1,0 +1,346 @@
+{% extends "admin_base.html" %}
+
+{% block page_title %}Dashboard{% endblock %}
+{% block page_heading %}Dashboard{% endblock %}
+{% block page_description %}Overview of your digital store performance{% endblock %}
+
+{% block content %}
+<!-- Stats Cards -->
+<div class="row g-4 mb-5">
+    <div class="col-lg-3 col-md-6">
+        <div class="stats-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stats-label">Total Revenue</div>
+                    <div class="stats-value">{{ "{:,.0f}".format(total_revenue) }} DZD</div>
+                    <small class="text-success">
+                        <i class="bi bi-arrow-up me-1"></i>All time earnings
+                    </small>
+                </div>
+                <div class="bg-primary bg-opacity-10 text-primary rounded-3 p-3">
+                    <i class="bi bi-currency-exchange fs-4"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6">
+        <div class="stats-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stats-label">Total Orders</div>
+                    <div class="stats-value">{{ total_orders }}</div>
+                    <small class="text-info">
+                        <i class="bi bi-receipt me-1"></i>Completed purchases
+                    </small>
+                </div>
+                <div class="bg-success bg-opacity-10 text-success rounded-3 p-3">
+                    <i class="bi bi-cart-check fs-4"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6">
+        <div class="stats-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stats-label">Pending Orders</div>
+                    <div class="stats-value">{{ pending_orders }}</div>
+                    <small class="text-warning">
+                        <i class="bi bi-clock me-1"></i>Awaiting confirmation
+                    </small>
+                </div>
+                <div class="bg-warning bg-opacity-10 text-warning rounded-3 p-3">
+                    <i class="bi bi-hourglass-split fs-4"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6">
+        <div class="stats-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stats-label">Total Products</div>
+                    <div class="stats-value">{{ total_products }}</div>
+                    <small class="text-primary">
+                        <i class="bi bi-box-seam me-1"></i>Active listings
+                    </small>
+                </div>
+                <div class="bg-info bg-opacity-10 text-info rounded-3 p-3">
+                    <i class="bi bi-grid-3x3-gap fs-4"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row g-4 mb-5">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="fw-semibold mb-4">
+                    <i class="bi bi-lightning-charge text-primary me-2"></i>Quick Actions
+                </h5>
+                <div class="row g-3">
+                    <div class="col-lg-3 col-md-6">
+                        <a href="{{ url_for('add_product') }}"
+                            class="btn btn-primary w-100 h-100 d-flex flex-column align-items-center justify-content-center p-4">
+                            <i class="bi bi-plus-circle fs-2 mb-2"></i>
+                            <span class="fw-semibold">Add Product</span>
+                            <small class="opacity-75">Create new digital product</small>
+                        </a>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <a href="{{ url_for('admin_orders') }}"
+                            class="btn btn-success w-100 h-100 d-flex flex-column align-items-center justify-content-center p-4">
+                            <i class="bi bi-receipt fs-2 mb-2"></i>
+                            <span class="fw-semibold">View Orders</span>
+                            <small class="opacity-75">Manage customer orders</small>
+                        </a>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <a href="{{ url_for('admin_products') }}"
+                            class="btn btn-info w-100 h-100 d-flex flex-column align-items-center justify-content-center p-4">
+                            <i class="bi bi-box-seam fs-2 mb-2"></i>
+                            <span class="fw-semibold">Manage Products</span>
+                            <small class="opacity-75">Edit existing products</small>
+                        </a>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <a href="{{ url_for('index') }}" target="_blank"
+                            class="btn btn-outline-primary w-100 h-100 d-flex flex-column align-items-center justify-content-center p-4">
+                            <i class="bi bi-eye fs-2 mb-2"></i>
+                            <span class="fw-semibold">View Store</span>
+                            <small class="opacity-75">See customer view</small>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Orders & Products -->
+<div class="row g-4">
+    <!-- Recent Orders -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-white border-bottom">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="fw-semibold mb-0">
+                        <i class="bi bi-clock-history text-primary me-2"></i>Recent Orders
+                    </h5>
+                    <a href="{{ url_for('admin_orders') }}" class="btn btn-sm btn-outline-primary">
+                        View All <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                {% if recent_orders %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="border-0">Order</th>
+                                <th class="border-0">Customer</th>
+                                <th class="border-0">Product</th>
+                                <th class="border-0">Amount</th>
+                                <th class="border-0">Status</th>
+                                <th class="border-0">Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in recent_orders %}
+                            <tr>
+                                <td class="fw-semibold">#{{ order.id }}</td>
+                                <td>
+                                    <div>
+                                        <div class="fw-medium">
+                                            {{ order.user_name or order.buyer_name }}
+                                            {% if order.user_name %}
+                                                <i class="bi bi-person-check text-success ms-1" title="Registered User"></i>
+                                            {% endif %}
+                                        </div>
+                                        <small class="text-muted">{{ order.user_email or order.email }}</small>
+                                    </div>
+                                </td>
+                                <td>{{ order.product_name }}</td>
+                                <td class="fw-semibold text-primary">{{ "{:,.0f}".format(order.price_dzd) }} DZD</td>
+                                <td>
+                                    {% if order.status == 'pending' %}
+                                    <span class="badge badge-pending">
+                                        <i class="bi bi-clock me-1"></i>Pending
+                                    </span>
+                                    {% elif order.status == 'confirmed' %}
+                                    <span class="badge badge-confirmed">
+                                        <i class="bi bi-check-circle me-1"></i>Confirmed
+                                    </span>
+                                    {% else %}
+                                    <span class="badge badge-rejected">
+                                        <i class="bi bi-x-circle me-1"></i>Rejected
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-muted">
+                                    {% if order.created_at_display %}
+                                    {{ order.created_at_display }}
+                                    {% elif order.created_at %}
+                                    {% if order.created_at.strftime %}
+                                    {{ order.created_at.strftime('%m/%d %H:%M') }}
+                                    {% else %}
+                                    {{ order.created_at[:16] }}
+                                    {% endif %}
+                                    {% else %}
+                                    N/A
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-receipt text-muted fs-1 mb-3"></i>
+                    <h6 class="text-muted">No orders yet</h6>
+                    <p class="text-muted small">Orders will appear here once customers start purchasing your products.
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Summary -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header bg-white border-bottom">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="fw-semibold mb-0">
+                        <i class="bi bi-box-seam text-success me-2"></i>Products
+                    </h5>
+                    <a href="{{ url_for('admin_products') }}" class="btn btn-sm btn-outline-success">
+                        Manage <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if products %}
+                <div class="d-flex flex-column gap-3">
+                    {% for product in products[:5] %}
+                    <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
+                        <div class="flex-grow-1">
+                            <div class="fw-medium">{{ product.name }}</div>
+                            <div class="d-flex align-items-center gap-2 mt-1">
+                                <span class="badge bg-{{ 'primary' if product.type == 'key' else 'success' }} badge-sm">
+                                    {{ 'Key' if product.type == 'key' else 'File' }}
+                                </span>
+                                {% if product.type == 'key' %}
+                                {% if product.stock_count > 0 %}
+                                <small class="text-success">{{ product.stock_count }} available</small>
+                                {% else %}
+                                <small class="text-danger">Out of stock</small>
+                                {% endif %}
+                                {% else %}
+                                <small class="text-success">∞ copies</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <div class="fw-bold text-primary">{{ "{:,.0f}".format(product.price_dzd) }} DZD</div>
+                            <small class="text-muted">{{ product.orders|length }} sold</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+
+                    {% if products|length > 5 %}
+                    <div class="text-center">
+                        <small class="text-muted">And {{ products|length - 5 }} more products...</small>
+                    </div>
+                    {% endif %}
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="bi bi-box text-muted fs-1 mb-3"></i>
+                    <h6 class="text-muted">No products yet</h6>
+                    <p class="text-muted small mb-3">Start by adding your first digital product.</p>
+                    <a href="{{ url_for('add_product') }}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-plus me-1"></i>Add Product
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- System Status -->
+        <div class="card mt-4">
+            <div class="card-header bg-white border-bottom">
+                <h6 class="fw-semibold mb-0">
+                    <i class="bi bi-shield-check text-info me-2"></i>System Status
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-flex flex-column gap-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-muted">SSL Security</span>
+                        <span class="badge bg-success">
+                            <i class="bi bi-shield-check me-1"></i>Active
+                        </span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-muted">Database</span>
+                        <span class="badge bg-success">
+                            <i class="bi bi-database-check me-1"></i>Connected
+                        </span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-muted">File Storage</span>
+                        <span class="badge bg-success">
+                            <i class="bi bi-folder-check me-1"></i>Available
+                        </span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-muted">Email Service</span>
+                        <span class="badge bg-{{ 'success' if config.get('RESEND_API_KEY') else 'warning' }}">
+                            <i
+                                class="bi bi-{{ 'envelope-check' if config.get('RESEND_API_KEY') else 'envelope-exclamation' }} me-1"></i>
+                            {{ 'Configured' if config.get('RESEND_API_KEY') else 'Not Set' }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-refresh dashboard every 30 seconds
+    {% if pending_orders > 0 %}
+    setInterval(function () {
+        location.reload();
+    }, 30000);
+    {% endif %}
+
+    // Add animation to stats cards
+    document.addEventListener('DOMContentLoaded', function () {
+        var statsCards = document.querySelectorAll('.stats-card');
+        statsCards.forEach(function (card, index) {
+            setTimeout(function () {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                card.style.transition = 'all 0.5s ease';
+
+                setTimeout(function () {
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, 100);
+            }, index * 100);
+        });
+    });
+</script>
+{% endblock %}

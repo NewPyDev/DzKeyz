@@ -1,0 +1,564 @@
+{% extends "admin_base.html" %}
+
+{% block page_title %}Analytics{% endblock %}
+{% block page_heading %}Analytics & Insights{% endblock %}
+{% block page_description %}Business performance overview and detailed insights{% endblock %}
+
+{% block extra_head %}
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Current Date & Time -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-6 text-center text-md-start">
+                            <h5 class="card-title mb-2">
+                                <i class="bi bi-calendar-check me-2"></i>Analytics Dashboard
+                            </h5>
+                            <p class="mb-0" id="currentDateTime">Loading...</p>
+                        </div>
+                        <div class="col-md-6 text-center text-md-end">
+                            <div class="btn-group" role="group">
+                                <button type="button"
+                                    class="btn {{ 'btn-light' if current_filter == 'all' else 'btn-outline-light' }} btn-sm {{ 'active' if current_filter == 'all' else '' }}"
+                                    onclick="filterByPeriod('all')">All Time</button>
+                                <button type="button"
+                                    class="btn {{ 'btn-light' if current_filter == '7' else 'btn-outline-light' }} btn-sm {{ 'active' if current_filter == '7' else '' }}"
+                                    onclick="filterByPeriod('7')">Last 7 Days</button>
+                                <button type="button"
+                                    class="btn {{ 'btn-light' if current_filter == '30' else 'btn-outline-light' }} btn-sm {{ 'active' if current_filter == '30' else '' }}"
+                                    onclick="filterByPeriod('30')">Last 30 Days</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-3 col-md-6">
+            <div class="card metric-card revenue-card text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50 mb-2">Total Sales</h6>
+                            <h2 class="mb-0 fw-bold" id="totalRevenue">{{ "{:,.0f}".format(total_revenue) }} DZD</h2>
+                            <small class="text-white-75">All confirmed orders</small>
+                        </div>
+                        <i class="bi bi-currency-dollar stats-icon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+            <div class="card metric-card orders-card text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50 mb-2">Total Orders</h6>
+                            <h2 class="mb-0 fw-bold" id="totalOrders">{{ total_orders }}</h2>
+                            <small class="text-white-75">Confirmed orders</small>
+                        </div>
+                        <i class="bi bi-bag-check stats-icon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+            <div class="card metric-card products-card text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50 mb-2">Products Sold</h6>
+                            <h2 class="mb-0 fw-bold">{{ total_products_sold }}</h2>
+                            <small class="text-white-75">Total units sold</small>
+                        </div>
+                        <i class="bi bi-box-seam stats-icon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+            <div class="card metric-card inventory-card text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50 mb-2">Inventory</h6>
+                            <h2 class="mb-0 fw-bold" id="remainingInventory">{{ remaining_inventory }}</h2>
+                            <small class="text-white-75">Items in stock</small>
+                        </div>
+                        <i class="bi bi-boxes stats-icon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Buyer Card -->
+    {% if top_buyer %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-primary">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-trophy me-2"></i>Top Customer
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h6 class="fw-bold mb-1">{{ top_buyer.buyer_name }}</h6>
+                            <p class="text-muted mb-1">{{ top_buyer.email }}</p>
+                            <small class="text-muted">{{ top_buyer.order_count }} orders placed</small>
+                        </div>
+                        <div class="col-md-4 text-md-end">
+                            <h4 class="text-primary mb-0">{{ "{:,.0f}".format(top_buyer.total_spent) }} DZD</h4>
+                            <small class="text-muted">Total spent</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Charts Row -->
+    <div class="row g-4 mb-4">
+        <!-- Daily Revenue Chart -->
+        <div class="col-lg-8">
+            <div class="card chart-card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-graph-up me-2"></i>Revenue Trends
+                    </h5>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-outline-primary active"
+                            onclick="updateChart('daily')">Daily</button>
+                        <button type="button" class="btn btn-outline-primary"
+                            onclick="updateChart('monthly')">Monthly</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sales per Product Chart -->
+        <div class="col-lg-4">
+            <div class="card chart-card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-pie-chart me-2"></i>Top Products
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="productChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tables Row -->
+    <div class="row g-4 mb-4">
+        <!-- Top Buyers Table -->
+        <div class="col-lg-6">
+            <div class="card table-card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-people me-2"></i>Top Customers
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if top_buyers %}
+                    <div class="table-responsive">
+                        <table class="table analytics-table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Customer</th>
+                                    <th>Orders</th>
+                                    <th class="text-end">Total Spent</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for buyer in top_buyers %}
+                                <tr class="activity-row">
+                                    <td>
+                                        <div>
+                                            <div class="fw-medium">{{ buyer.buyer_name }}</div>
+                                            <small class="text-muted">{{ buyer.email }}</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="analytics-badge badge bg-primary">{{ buyer.total_purchases
+                                            }}</span>
+                                    </td>
+                                    <td class="text-end fw-bold text-success">
+                                        {{ "{:,.0f}".format(buyer.total_spent) }} DZD
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-people text-muted" style="font-size: 3rem;"></i>
+                        <p class="text-muted mt-2">No customers yet</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Most Sold Products Table -->
+        <div class="col-lg-6">
+            <div class="card table-card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-trophy me-2"></i>Best Selling Products
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if most_sold_products %}
+                    <div class="table-responsive">
+                        <table class="table analytics-table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Sold</th>
+                                    <th class="text-end">Revenue</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for product in most_sold_products %}
+                                <tr class="activity-row">
+                                    <td>
+                                        <div class="fw-medium">{{ product.name }}</div>
+                                    </td>
+                                    <td>
+                                        <span class="analytics-badge badge bg-success">{{ product.quantity_sold
+                                            }}</span>
+                                    </td>
+                                    <td class="text-end fw-bold text-primary">
+                                        {{ "{:,.0f}".format(product.revenue) }} DZD
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-box-seam text-muted" style="font-size: 3rem;"></i>
+                        <p class="text-muted mt-2">No sales yet</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-clock-history me-2"></i>Recent Activity
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if recent_activity %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>Customer</th>
+                                    <th>Product</th>
+                                    <th>Amount</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for activity in recent_activity %}
+                                <tr>
+                                    <td class="fw-bold">#{{ activity.id }}</td>
+                                    <td>{{ activity.buyer_name }}</td>
+                                    <td>{{ activity.product_name }}</td>
+                                    <td class="fw-bold text-success">{{ "{:,.0f}".format(activity.price_dzd) }} DZD</td>
+                                    <td class="text-muted">
+                                        {% if activity.confirmed_at %}
+                                        {{ activity.confirmed_at[:16] }}
+                                        {% else %}
+                                        N/A
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-clock-history text-muted" style="font-size: 3rem;"></i>
+                        <p class="text-muted mt-2">No recent activity</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h6 class="card-title">Export Data</h6>
+                    <p class="text-muted">Download your sales data for external analysis</p>
+                    <a href="{{ url_for('export_sales') }}" class="btn btn-outline-primary">
+                        <i class="bi bi-download me-2"></i>Export Sales CSV
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Update current date and time
+    function updateDateTime() {
+        const now = new Date();
+        const options = {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        };
+        document.getElementById('currentDateTime').textContent = now.toLocaleDateString('en-US', options);
+    }
+
+    // Update every second
+    updateDateTime();
+    setInterval(updateDateTime, 1000);
+
+    // Chart data from Flask
+    const dailyRevenueData = {{ daily_revenue|tojson|safe }};
+    const salesPerProductData = {{ sales_per_product|tojson|safe }};
+    const monthlyStatsData = {{ monthly_stats|tojson|safe }};
+
+    // Revenue Chart
+    const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+    let revenueChart = new Chart(revenueCtx, {
+        type: 'line',
+        data: {
+            labels: dailyRevenueData.map(item => item.date),
+            datasets: [{
+                label: 'Revenue (DZD)',
+                data: dailyRevenueData.map(item => item.revenue),
+                borderColor: '#667eea',
+                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: '#667eea',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 2,
+                pointRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function (value) {
+                            return value.toLocaleString() + ' DZD';
+                        }
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            },
+            elements: {
+                point: {
+                    hoverRadius: 8
+                }
+            }
+        }
+    });
+
+    // Product Sales Chart (Doughnut)
+    const productCtx = document.getElementById('productChart').getContext('2d');
+    const productChart = new Chart(productCtx, {
+        type: 'doughnut',
+        data: {
+            labels: salesPerProductData.slice(0, 5).map(item => item.name),
+            datasets: [{
+                data: salesPerProductData.slice(0, 5).map(item => item.quantity),
+                backgroundColor: [
+                    '#667eea',
+                    '#764ba2',
+                    '#f093fb',
+                    '#f5576c',
+                    '#4facfe'
+                ],
+                borderWidth: 0,
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        usePointStyle: true
+                    }
+                }
+            }
+        }
+    });
+
+    // Chart update function
+    function updateChart(type) {
+        // Update button states
+        document.querySelectorAll('.btn-group .btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        event.target.classList.add('active');
+
+        if (type === 'monthly') {
+            revenueChart.data.labels = monthlyStatsData.map(item => item.month);
+            revenueChart.data.datasets[0].data = monthlyStatsData.map(item => item.revenue);
+            revenueChart.data.datasets[0].label = 'Monthly Revenue (DZD)';
+        } else {
+            revenueChart.data.labels = dailyRevenueData.map(item => item.date);
+            revenueChart.data.datasets[0].data = dailyRevenueData.map(item => item.revenue);
+            revenueChart.data.datasets[0].label = 'Daily Revenue (DZD)';
+        }
+
+        revenueChart.update();
+    }
+
+    // Add smooth animations
+    Chart.defaults.animation.duration = 1000;
+    Chart.defaults.animation.easing = 'easeInOutQuart';
+
+    // Responsive chart resize
+    window.addEventListener('resize', function () {
+        revenueChart.resize();
+        productChart.resize();
+    });
+
+    // Filter by time period
+    function filterByPeriod(days) {
+        // Update button states
+        document.querySelectorAll('.btn-group .btn').forEach(btn => {
+            btn.classList.remove('active');
+            btn.classList.add('btn-outline-light');
+            btn.classList.remove('btn-light');
+        });
+        event.target.classList.add('active');
+        event.target.classList.add('btn-light');
+        event.target.classList.remove('btn-outline-light');
+
+        // Show loading state
+        showToast('Filtering data...', 'info');
+
+        // Reload page with filter parameter
+        const url = new URL(window.location);
+        if (days === 'all') {
+            url.searchParams.delete('days');
+        } else {
+            url.searchParams.set('days', days);
+        }
+        window.location.href = url.toString();
+    }
+
+    // Real-time stats update
+    function updateStats() {
+        fetch('/admin/analytics/api')
+            .then(response => response.json())
+            .then(data => {
+                // Update the stats cards with animation
+                animateValue('totalRevenue', data.total_revenue, ' DZD');
+                animateValue('totalOrders', data.total_orders, '');
+                animateValue('remainingInventory', data.remaining_inventory, '');
+            })
+            .catch(error => {
+                console.log('Stats update failed:', error);
+            });
+    }
+
+    // Animate number changes
+    function animateValue(elementId, newValue, suffix = '') {
+        const element = document.getElementById(elementId);
+        if (!element) return;
+
+        const currentValue = parseInt(element.textContent.replace(/[^\d]/g, '')) || 0;
+        const difference = newValue - currentValue;
+        const duration = 1000;
+        const steps = 20;
+        const stepValue = difference / steps;
+        const stepDuration = duration / steps;
+
+        let currentStep = 0;
+        const timer = setInterval(() => {
+            currentStep++;
+            const value = Math.round(currentValue + (stepValue * currentStep));
+            element.textContent = value.toLocaleString() + suffix;
+
+            if (currentStep >= steps) {
+                clearInterval(timer);
+                element.textContent = newValue.toLocaleString() + suffix;
+            }
+        }, stepDuration);
+    }
+
+    // Update stats every 30 seconds
+    setInterval(updateStats, 30000);
+
+    // Auto-refresh data every 5 minutes
+    setInterval(function () {
+        location.reload();
+    }, 300000);
+
+    console.log('📊 Analytics dashboard loaded successfully!');
+</script>
+{% endblock %}

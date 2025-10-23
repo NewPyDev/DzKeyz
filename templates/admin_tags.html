@@ -1,0 +1,151 @@
+{% extends "admin_base.html" %}
+
+{% block page_title %}Tags{% endblock %}
+{% block page_heading %}Product Tags{% endblock %}
+{% block page_description %}Manage product tags for better organization and filtering{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Add Tag Form -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-plus-circle me-2"></i>Add New Tag
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('add_tag') }}">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="name" class="form-label">Tag Name</label>
+                                <input type="text" class="form-control" id="name" name="name" 
+                                       placeholder="e.g., Popular, New, Premium, Sale" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="color" class="form-label">Tag Color</label>
+                                <div class="input-group">
+                                    <input type="color" class="form-control form-control-color" 
+                                           id="color" name="color" value="#007bff" title="Choose tag color">
+                                    <input type="text" class="form-control" id="colorText" 
+                                           placeholder="#007bff" readonly>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-plus me-2"></i>Add Tag
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tags List -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="bi bi-tags me-2"></i>All Tags ({{ tags|length }})
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            {% if tags %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Preview</th>
+                            <th>Name</th>
+                            <th>Color</th>
+                            <th>Products</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for tag in tags %}
+                        <tr>
+                            <td>
+                                <span class="badge bg-secondary">#{{ tag.id }}</span>
+                            </td>
+                            <td>
+                                <span class="badge" style="background-color: {{ tag.color }}; color: white;">
+                                    {{ tag.name }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="fw-semibold">{{ tag.name }}</div>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="color-swatch me-2" 
+                                         style="width: 20px; height: 20px; background-color: {{ tag.color }}; border-radius: 3px; border: 1px solid #dee2e6;"></div>
+                                    <code>{{ tag.color }}</code>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">0 products</span>
+                            </td>
+                            <td>
+                                <small class="text-muted">
+                                    {{ tag.created_at[:10] if tag.created_at else 'N/A' }}
+                                </small>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary btn-sm" 
+                                            onclick="editTag({{ tag.id }})"
+                                            title="Edit Tag">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn btn-outline-danger btn-sm" 
+                                            onclick="deleteTag({{ tag.id }}, '{{ tag.name }}')"
+                                            title="Delete Tag">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-tags display-1 text-muted"></i>
+                <h4 class="text-muted mt-3">No tags yet</h4>
+                <p class="text-muted">Create your first tag to help organize and filter your products.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Update color text input when color picker changes
+document.getElementById('color').addEventListener('input', function() {
+    document.getElementById('colorText').value = this.value;
+});
+
+// Initialize color text input
+document.getElementById('colorText').value = document.getElementById('color').value;
+
+function editTag(tagId) {
+    // For now, just show an alert. You can implement a modal edit form later
+    alert('Edit functionality coming soon!');
+}
+
+function deleteTag(tagId, tagName) {
+    if (confirm(`Are you sure you want to delete the tag "${tagName}"? This action cannot be undone.`)) {
+        // For now, just show an alert. You can implement delete functionality later
+        alert('Delete functionality coming soon!');
+    }
+}
+</script>
+{% endblock %}

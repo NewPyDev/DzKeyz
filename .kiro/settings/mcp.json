@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "brevo": {
+      "command": "uvx",
+      "args": ["brevo-mcp-server@latest"],
+      "env": {
+        "BREVO_API_KEY": "your-brevo-api-key-here",
+        "FASTMCP_LOG_LEVEL": "ERROR"
+      },
+      "disabled": false,
+      "autoApprove": ["get_email_campaigns", "get_email_statistics", "get_contacts", "get_senders"]
+    }
+  }
+}

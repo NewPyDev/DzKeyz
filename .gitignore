@@ -1,0 +1,55 @@
+# Environment variables (contains sensitive data)
+.env
+
+# Database files
+*.db
+store.db
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environment
+venv/
+env/
+ENV/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Upload directories (may contain sensitive payment proofs)
+uploads/
+receipts/
+products/
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Flask instance folder
+instance/
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+
+# pytest
+.pytest_cache/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json

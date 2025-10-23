@@ -1,0 +1,536 @@
+{% extends "admin_base.html" %}
+
+{% block page_title %}Edit Product{% endblock %}
+{% block page_heading %}Edit Product{% endblock %}
+{% block page_description %}Update product details, manage keys, and modify settings{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Breadcrumb -->
+            <nav aria-label="breadcrumb" class="mb-4">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a href="{{ url_for('admin_dashboard') }}">Dashboard</a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a href="{{ url_for('admin_products') }}">Products</a>
+                    </li>
+                    <li class="breadcrumb-item active">Edit Product</li>
+                </ol>
+            </nav>
+
+            <!-- Product Header -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="me-3">
+                            {% if product.type == 'key' %}
+                                <div class="bg-primary text-white rounded-3 p-3">
+                                    <i class="bi bi-key-fill fs-4"></i>
+                                </div>
+                            {% else %}
+                                <div class="bg-success text-white rounded-3 p-3">
+                                    <i class="bi bi-file-earmark-arrow-down-fill fs-4"></i>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <h3 class="mb-1">{{ product.name }}</h3>
+                            <p class="text-muted mb-0">{{ product.type.title() }} Product • ID #{{ product.id }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <form method="POST" enctype="multipart/form-data">
+                <!-- Basic Information -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-info-circle me-2"></i>Basic Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="name" class="form-label">Product Name</label>
+                                <input type="text" class="form-control" id="name" name="name" value="{{ product.name }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="price_dzd" class="form-label">Price (DZD)</label>
+                                <input type="number" class="form-control" id="price_dzd" name="price_dzd" step="0.01" value="{{ product.price_dzd }}" required>
+                            </div>
+                            <div class="col-12">
+                                <label for="description" class="form-label">Description</label>
+                                <textarea class="form-control" id="description" name="description" rows="3">{{ product.description or '' }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Product Type Display -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Product Type</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>Product Type:</strong> 
+                            {% if product.type == 'key' %}
+                                <span class="badge bg-primary ms-2">License Keys</span>
+                            {% else %}
+                                <span class="badge bg-success ms-2">Digital Files</span>
+                            {% endif %}
+                            <br><small class="text-muted">Product type cannot be changed after creation</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Product Type Specific Settings -->
+                {% if product.type == 'key' %}
+                <!-- Key Management -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-key me-2"></i>Key Management
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-4">
+                            <label for="key_content" class="form-label">Add New Keys</label>
+                            <textarea class="form-control font-monospace" id="key_content" name="key_content" rows="6" 
+                                      placeholder="Enter new license keys, one per line:&#10;&#10;KEY-004-WXYZ-1234&#10;KEY-005-ABCD-5678"></textarea>
+                            <div class="form-text">Add new keys to increase stock. Existing keys won't be duplicated.</div>
+                        </div>
+                        
+                        {% if existing_keys %}
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="mb-0">Existing Keys ({{ existing_keys|length }} total)</h6>
+                                <div class="text-muted small">
+                                    Available: {{ existing_keys|selectattr('used', 'equalto', False)|list|length }} | 
+                                    Used: {{ existing_keys|selectattr('used', 'equalto', True)|list|length }}
+                                </div>
+                            </div>
+                            
+                            <div class="table-responsive" style="max-height: 300px;">
+                                <table class="table table-sm">
+                                    <thead class="table-light sticky-top">
+                                        <tr>
+                                            <th>Key</th>
+                                            <th>Status</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for key in existing_keys %}
+                                        <tr>
+                                            <td class="font-monospace">{{ key.value }}</td>
+                                            <td>
+                                                {% if key.used %}
+                                                    <span class="badge bg-danger">Used</span>
+                                                {% else %}
+                                                    <span class="badge bg-success">Available</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if not key.used %}
+                                                <form method="POST" action="{{ url_for('delete_key', key_id=key.id) }}" class="d-inline">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger" 
+                                                            onclick="return confirm('Delete this key?')">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </form>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% elif product.type == 'file' %}
+                <!-- File Management -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-file-earmark me-2"></i>File Management
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Current File</label>
+                            {% if product.file_or_key_path %}
+                            <div class="alert alert-info">
+                                <i class="bi bi-file-earmark me-2"></i>
+                                <strong>Current file:</strong> {{ product.file_or_key_path.split('/')[-1] or product.file_or_key_path.split('\\')[-1] }}
+                            </div>
+                            {% else %}
+                            <div class="alert alert-warning">
+                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                No file uploaded yet
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="product_file" class="form-label">Upload New File (Optional)</label>
+                            <input type="file" class="form-control" id="product_file" name="product_file">
+                            <div class="form-text">Any file type up to 16MB. Leave empty to keep current file.</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="file_stock" class="form-label">Stock Count</label>
+                            <input type="number" class="form-control" id="file_stock" name="file_stock" value="{{ product.stock_count }}" min="0">
+                            <div class="form-text">Set the number of copies available for sale</div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Product Images Section -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-images me-2"></i>Product Images Management
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Existing Images -->
+                        {% if product.images %}
+                        <div class="mb-4">
+                            <h6 class="fw-semibold mb-3">Current Images</h6>
+                            <div class="row g-3" id="existing-images">
+                                {% try %}
+                                    {% set image_list = product.images|from_json %}
+                                {% except %}
+                                    {% set image_list = product.images.split(',') %}
+                                {% endtry %}
+                                {% for image in image_list %}
+                                {% if image.strip() %}
+                                <div class="col-lg-3 col-md-4 col-sm-6" data-image="{{ image.strip() }}">
+                                    <div class="card image-preview-card">
+                                        <div class="position-relative">
+                                            <img src="/static/products/{{ image.strip() }}" class="card-img-top" 
+                                                 style="height: 150px; object-fit: cover;" 
+                                                 onclick="viewImageModal('/static/products/{{ image.strip() }}')">
+                                            <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 m-2" 
+                                                    data-image="{{ image.strip() }}" data-product-id="{{ product.id }}"
+                                                    onclick="removeExistingImage(this.dataset.image, this.dataset.productId, this)">
+                                                <i class="bi bi-x"></i>
+                                            </button>
+                                            {% if loop.first %}
+                                            <span class="badge bg-primary position-absolute bottom-0 start-0 m-2">Main Image</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="card-body p-2">
+                                            <small class="text-muted">{{ image.strip() }}</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Add New Images -->
+                        <div class="border-top pt-4">
+                            <h6 class="fw-semibold mb-3">Add New Images</h6>
+                            
+                            <!-- Drag and Drop Upload Area -->
+                            <div class="upload-area border-2 border-dashed rounded-3 p-4 text-center mb-3" id="uploadArea">
+                                <div class="upload-content">
+                                    <i class="bi bi-cloud-upload fs-1 text-primary mb-3"></i>
+                                    <h6 class="fw-semibold mb-2">Drag & Drop New Images Here</h6>
+                                    <p class="text-muted mb-3">or click to browse files</p>
+                                    <input type="file" class="d-none" id="product_images" name="product_images" multiple accept="image/*">
+                                    <button type="button" class="btn btn-primary" onclick="document.getElementById('product_images').click()">
+                                        <i class="bi bi-plus-circle me-2"></i>Choose Images
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="alert alert-info">
+                                <small>
+                                    <strong>Tip:</strong> New images will be added to your existing collection. 
+                                    Supported formats: JPG, PNG, WebP (max 5MB each).
+                                </small>
+                            </div>
+                            
+                            <!-- New Images Preview -->
+                            <div id="new-image-preview" class="row g-3 mt-2"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Current Stock Status -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-box me-2"></i>Stock Status
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex align-items-center justify-content-between p-3 bg-light rounded">
+                            <div class="d-flex align-items-center">
+                                {% if product.stock_count > 0 %}
+                                    <div class="bg-success rounded-circle me-3" style="width: 12px; height: 12px;"></div>
+                                    <span class="fs-5 fw-semibold">{{ product.stock_count }} in stock</span>
+                                {% else %}
+                                    <div class="bg-danger rounded-circle me-3" style="width: 12px; height: 12px;"></div>
+                                    <span class="fs-5 fw-semibold text-danger">Out of stock</span>
+                                {% endif %}
+                            </div>
+                            {% if product.type == 'key' %}
+                                <small class="text-muted">(Automatically updated based on available keys)</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="d-flex gap-3 justify-content-end">
+                    <a href="{{ url_for('admin_products') }}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left me-2"></i>Back to Products
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle me-2"></i>Update Product
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // File upload preview
+    const fileInput = document.getElementById('product_file');
+    if (fileInput) {
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const existingPreview = document.querySelector('.file-preview');
+            if (existingPreview) existingPreview.remove();
+            
+            if (file) {
+                const preview = document.createElement('div');
+                preview.className = 'alert alert-success mt-2 file-preview';
+                preview.innerHTML = `
+                    <i class="bi bi-check-circle me-2"></i>
+                    <strong>New file selected:</strong> ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)
+                `;
+                e.target.parentNode.appendChild(preview);
+            }
+        });
+    }
+    
+    // Key counter
+    const keyContent = document.getElementById('key_content');
+    if (keyContent) {
+        keyContent.addEventListener('input', function(e) {
+            const keys = e.target.value.split('\n').filter(key => key.trim().length > 0);
+            const existingCounter = document.getElementById('key-counter');
+            if (existingCounter) existingCounter.remove();
+            
+            if (keys.length > 0) {
+                const counter = document.createElement('div');
+                counter.id = 'key-counter';
+                counter.className = 'alert alert-info mt-2';
+                counter.innerHTML = `<strong>${keys.length}</strong> new keys will be added`;
+                e.target.parentNode.appendChild(counter);
+            }
+        });
+    }
+    
+    // Image upload and preview functionality
+    const imageInput = document.getElementById('product_images');
+    const imagePreview = document.getElementById('new-image-preview');
+    const uploadArea = document.getElementById('uploadArea');
+    let selectedFiles = [];
+
+    if (uploadArea && imageInput) {
+        // Drag and drop functionality
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            uploadArea.classList.add('border-primary', 'bg-light');
+        });
+
+        uploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('border-primary', 'bg-light');
+        });
+
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('border-primary', 'bg-light');
+            
+            const files = Array.from(e.dataTransfer.files);
+            handleFiles(files);
+        });
+
+        // File input change
+        imageInput.addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            handleFiles(files);
+        });
+
+        function handleFiles(files) {
+            files.forEach(file => {
+                if (file.type.startsWith('image/')) {
+                    if (file.size <= 5 * 1024 * 1024) { // 5MB limit
+                        selectedFiles.push(file);
+                        addImagePreview(file, selectedFiles.length - 1);
+                    } else {
+                        showToast(`File ${file.name} is too large (max 5MB)`, 'warning');
+                    }
+                } else {
+                    showToast(`File ${file.name} is not a valid image format`, 'warning');
+                }
+            });
+            updateFileInput();
+        }
+
+        function addImagePreview(file, index) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const col = document.createElement('div');
+                col.className = 'col-lg-3 col-md-4 col-sm-6';
+                col.innerHTML = `
+                    <div class="card image-preview-card" data-index="${index}">
+                        <div class="position-relative">
+                            <img src="${e.target.result}" class="card-img-top" style="height: 150px; object-fit: cover;">
+                            <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 m-2" 
+                                    onclick="removeNewImage(${index})">
+                                <i class="bi bi-x"></i>
+                            </button>
+                            <span class="badge bg-success position-absolute bottom-0 start-0 m-2">New</span>
+                        </div>
+                        <div class="card-body p-2">
+                            <small class="text-muted text-truncate d-block">${file.name}</small>
+                            <small class="text-muted">${(file.size / 1024 / 1024).toFixed(2)} MB</small>
+                        </div>
+                    </div>
+                `;
+                imagePreview.appendChild(col);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function updateFileInput() {
+            const dt = new DataTransfer();
+            selectedFiles.forEach(file => dt.items.add(file));
+            imageInput.files = dt.files;
+        }
+
+        // Make functions globally available
+        window.removeNewImage = function(index) {
+            selectedFiles.splice(index, 1);
+            updateImagePreview();
+            updateFileInput();
+        };
+
+        function updateImagePreview() {
+            imagePreview.innerHTML = '';
+            selectedFiles.forEach((file, index) => {
+                addImagePreview(file, index);
+            });
+        }
+    }
+});
+
+// Remove existing image
+function removeExistingImage(filename, productId, button) {
+    if (confirm('Are you sure you want to remove this image?')) {
+        // Show loading state
+        button.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+        button.disabled = true;
+        
+        fetch(`/admin/remove_image/${productId}/${filename}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Remove the image card with animation
+                const imageCard = button.closest('[data-image]');
+                imageCard.style.transition = 'all 0.3s ease';
+                imageCard.style.transform = 'scale(0)';
+                imageCard.style.opacity = '0';
+                
+                setTimeout(() => {
+                    imageCard.remove();
+                    showToast('Image removed successfully', 'success');
+                }, 300);
+            } else {
+                showToast('Failed to remove image', 'danger');
+                button.innerHTML = '<i class="bi bi-x"></i>';
+                button.disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('Failed to remove image', 'danger');
+            button.innerHTML = '<i class="bi bi-x"></i>';
+            button.disabled = false;
+        });
+    }
+}
+
+// View image in modal
+function viewImageModal(imageSrc) {
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.innerHTML = `
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Product Image</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <img src="${imageSrc}" class="img-fluid rounded" alt="Product Image">
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    
+    const bsModal = new bootstrap.Modal(modal);
+    bsModal.show();
+    
+    modal.addEventListener('hidden.bs.modal', () => {
+        document.body.removeChild(modal);
+    });
+}
+
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    toast.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+        }
+    }, 5000);
+}
+</script>
+{% endblock %}
