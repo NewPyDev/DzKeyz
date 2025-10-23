@@ -984,18 +984,44 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+@app.route('/health')
+def health_check():
+    """Simple health check endpoint for debugging"""
+    try:
+        # Test database connection
+        conn = get_db()
+        conn.execute('SELECT 1').fetchone()
+        conn.close()
+        db_status = "OK"
+    except Exception as e:
+        db_status = f"ERROR: {str(e)}"
+    
+    return {
+        "status": "OK",
+        "database": db_status,
+        "environment": {
+            "PORT": os.environ.get('PORT', 'Not set'),
+            "SECRET_KEY": "Set" if os.environ.get('SECRET_KEY') else "Not set",
+            "STORE_NAME": os.environ.get('STORE_NAME', 'Not set')
+        }
+    }
+
 @app.route('/')
 def index():
-    conn = get_db()
-    
-    # Get visible products only
-    products_raw = conn.execute('''
-        SELECT p.*, c.name as category_name, c.icon as category_icon
-        FROM products p
-        LEFT JOIN categories c ON p.category_id = c.id
-        WHERE p.is_visible = TRUE AND (p.stock_count > 0 OR p.type != 'key')
-        ORDER BY p.is_featured DESC, p.created_at DESC
-    ''').fetchall()
+    try:
+        conn = get_db()
+        
+        # Get visible products only
+        products_raw = conn.execute('''
+            SELECT p.*, c.name as category_name, c.icon as category_icon
+            FROM products p
+            LEFT JOIN categories c ON p.category_id = c.id
+            WHERE p.is_visible = TRUE AND (p.stock_count > 0 OR p.type != 'key')
+            ORDER BY p.is_featured DESC, p.created_at DESC
+        ''').fetchall()
+    except Exception as e:
+        # If database fails, show a simple page
+        return f"<h1>DZ Keyz Store</h1><p>Setting up... Database error: {str(e)}</p><p><a href='/health'>Health Check</a></p>"
     
     products = []
     for product in products_raw:
