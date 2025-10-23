@@ -227,10 +227,15 @@ document.querySelectorAll('input[name="statusFilter"]').forEach(radio => {
 
 // View message details
 function viewMessage(messageId) {
-    // Find the message row
-    const messageRow = document.querySelector(`tr[data-status] .badge:contains('#${messageId}')`);
-    // For now, we'll use the data from the table
-    // In a real implementation, you might want to fetch full details via AJAX
+    // Find the message row by looking for the badge with the message ID
+    const badges = document.querySelectorAll('.badge');
+    let messageRow = null;
+    
+    badges.forEach(badge => {
+        if (badge.textContent.includes(`#${messageId}`)) {
+            messageRow = badge.closest('tr');
+        }
+    });
     
     const modalBody = document.getElementById('messageModalBody');
     modalBody.innerHTML = `
@@ -239,14 +244,63 @@ function viewMessage(messageId) {
         </div>
     `;
     
-    // Simulate loading message details
+    // Get message details from the row
     setTimeout(() => {
-        modalBody.innerHTML = `
-            <div class="alert alert-info">
-                <i class="bi bi-info-circle me-2"></i>
-                Message details would be loaded here. For now, check the table for message content.
-            </div>
-        `;
+        if (messageRow) {
+            const cells = messageRow.querySelectorAll('td');
+            const name = cells[1].textContent.trim();
+            const email = cells[2].textContent.trim();
+            const subject = cells[3].textContent.trim();
+            const message = cells[4].textContent.trim();
+            const hasAttachment = cells[5].querySelector('.bi-paperclip') !== null;
+            const date = cells[6].textContent.trim();
+            const status = cells[7].textContent.trim();
+            
+            modalBody.innerHTML = `
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Name:</label>
+                        <p class="form-control-plaintext">${name}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Email:</label>
+                        <p class="form-control-plaintext">${email}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Subject:</label>
+                        <p class="form-control-plaintext">${subject}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Date:</label>
+                        <p class="form-control-plaintext">${date}</p>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-bold">Message:</label>
+                        <div class="border rounded p-3 bg-light">
+                            ${message}
+                        </div>
+                    </div>
+                    ${hasAttachment ? '<div class="col-12"><div class="alert alert-info"><i class="bi bi-paperclip me-2"></i>This message has an attachment.</div></div>' : ''}
+                    <div class="col-12">
+                        <label class="form-label fw-bold">Status:</label>
+                        <span class="badge bg-${status === 'New' ? 'warning' : status === 'Read' ? 'success' : 'info'}">${status}</span>
+                    </div>
+                </div>
+            `;
+            
+            // Update reply button
+            const replyBtn = document.getElementById('replyBtn');
+            replyBtn.onclick = () => {
+                window.location.href = `mailto:${email}?subject=Re: ${subject}`;
+            };
+        } else {
+            modalBody.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Could not load message details.
+                </div>
+            `;
+        }
     }, 500);
 }
 
