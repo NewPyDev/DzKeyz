@@ -812,13 +812,16 @@ def send_email(to, subject, body, customer_name=None, email_type="general", atta
         formatted_body = format_professional_email(customer_name, body, email_type)
         
         # Convert to HTML for better formatting
+        # Convert newlines for HTML (can't use backslashes in f-strings)
+        html_formatted_body = formatted_body.replace('\n\n', '</p><p style="margin: 15px 0;">').replace('\n', '<br>')
+        
         html_body = f"""
         <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
             <div style="border-bottom: 3px solid #667eea; padding-bottom: 20px; margin-bottom: 20px;">
                 <h2 style="color: #333; margin: 0;">{from_name}</h2>
             </div>
             <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                {formatted_body.replace('\n\n', '</p><p style="margin: 15px 0;">').replace('\n', '<br>')}
+                {html_formatted_body}
             </div>
             <div style="text-align: center; padding: 20px; color: #666; font-size: 14px; border-top: 1px solid #eee; margin-top: 30px;">
                 <p>This email was sent from <strong>{from_name}</strong></p>
