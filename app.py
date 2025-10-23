@@ -958,6 +958,24 @@ def send_telegram_notification(message, order_id=None, payment_proof_path=None):
         print(f"Telegram notification failed: {e}")
         return False
 
+# Authentication decorators
+def admin_required(f):
+    def decorated_function(*args, **kwargs):
+        if not session.get('admin_logged_in'):
+            return redirect(url_for('admin_login'))
+        return f(*args, **kwargs)
+    decorated_function.__name__ = f.__name__
+    return decorated_function
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('user_id'):
+            flash('Please log in to access this page.', 'error')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
 @app.route('/')
 def index():
     conn = get_db()
@@ -1601,23 +1619,6 @@ def reset_password():
             return redirect(url_for('login'))
     
     return render_template('reset_password.html', token=token)
-
-def admin_required(f):
-    def decorated_function(*args, **kwargs):
-        if not session.get('admin_logged_in'):
-            return redirect(url_for('admin_login'))
-        return f(*args, **kwargs)
-    decorated_function.__name__ = f.__name__
-    return decorated_function
-
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not session.get('user_id'):
-            flash('Please log in to access this page.', 'error')
-            return redirect(url_for('login'))
-        return f(*args, **kwargs)
-    return decorated_function
 
 @app.route('/admin')
 @admin_required
