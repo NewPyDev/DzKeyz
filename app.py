@@ -213,6 +213,14 @@ os.makedirs('static/products', exist_ok=True)
 os.makedirs('templates', exist_ok=True)
 os.makedirs('receipts', exist_ok=True)
 
+# Initialize database when app is imported (for gunicorn)
+try:
+    init_db()
+    print("✅ Database initialized successfully")
+except Exception as e:
+    print(f"⚠️ Database initialization warning: {e}")
+    # Continue anyway - database might already exist
+
 # Database setup
 def init_db():
     conn = sqlite3.connect('store.db')
@@ -3402,8 +3410,13 @@ def download_product_file(order_id):
     return send_file(order['file_or_key_path'], as_attachment=True, download_name=download_name)
 
 if __name__ == '__main__':
-    # Initialize database on startup
-    init_db()
+    try:
+        # Initialize database on startup
+        init_db()
+        print("✅ Database initialized successfully")
+    except Exception as e:
+        print(f"⚠️ Database initialization warning: {e}")
+        # Continue anyway - database might already exist
     
     # Get port from environment variable (for Render) or default to 5000
     port = int(os.environ.get('PORT', 5000))
