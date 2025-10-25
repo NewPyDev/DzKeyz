@@ -1544,9 +1544,11 @@ def register():
         # Create new user (inactive by default)
         password_hash = generate_password_hash(password)
         try:
+            print(f"🔧 DEBUG: Creating user - Name: {name}, Email: {email}, Active: False")
             conn.execute('INSERT INTO users (name, email, password_hash, is_active, activation_token) VALUES (?, ?, ?, ?, ?)',
                         (name, email, password_hash, False, activation_token))
             conn.commit()
+            print(f"🔧 DEBUG: User created successfully in database")
             conn.close()
             
             # Send activation email
@@ -1575,6 +1577,9 @@ def register():
             
             return redirect(url_for('login'))
         except Exception as e:
+            print(f"🔧 DEBUG: Error creating user: {e}")
+            import traceback
+            traceback.print_exc()
             flash('Error creating account. Please try again.', 'error')
             conn.close()
             return render_template('register.html')
@@ -1921,6 +1926,22 @@ def admin_dashboard():
                          total_products=total_products,
                          total_revenue=total_revenue,
                          pending_orders=pending_orders)
+
+@app.route('/debug/users')
+def debug_users():
+    """Debug route to check users in database"""
+    conn = get_db()
+    users = conn.execute('SELECT * FROM users ORDER BY created_at DESC').fetchall()
+    conn.close()
+    
+    result = f"<h2>Users in Database ({len(users)} total):</h2>"
+    if users:
+        for user in users:
+            result += f"<p>ID: {user['id']}, Name: {user['name']}, Email: {user['email']}, Active: {user['is_active']}, Token: {user['activation_token'][:10] if user['activation_token'] else 'None'}...</p>"
+    else:
+        result += "<p>No users found in database</p>"
+    
+    return result
 
 @app.route('/admin/users')
 @admin_required
