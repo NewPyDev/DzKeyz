@@ -1587,67 +1587,63 @@ def register():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
+        email = request.form.get('email', '').strip().lower()
+        password = request.form.get('password', '')
+        
+        # Basic validation
+        if not email or not password:
+            flash('Email and password are required.', 'error')
+            return render_template('login.html')
+        
         try:
-            email = request.form.get('email', '').strip().lower()
-            password = request.form.get('password', '')
-            
-            if not email or not password:
-                flash('Email and password are required.', 'error')
-                return render_template('login.html')
-            
             conn = get_db()
             user = conn.execute('SELECT * FROM users WHERE email = ?', (email,)).fetchone()
             conn.close()
             
-            if user and check_password_hash(user['password_hash'], password):
-                print(f"🔧 DEBUG: Password verified for user: {user['name']}")
-                
-                # Check if account is activated
-                try:
-                    is_active = user.get('is_active', True)  # Default to True for backward compatibility
-                    print(f"🔧 DEBUG: User is_active status: {is_active}")
-                    
-                    if not is_active:
-                        flash('⚠️ Please activate your account first. Check your email for the activation link.', 'warning')
-                        return render_template('login.html')
-                except Exception as activation_error:
-                    print(f"🔧 DEBUG: Error checking activation: {activation_error}")
-                    # Continue with login if activation check fails
-                
-                # Set session with safe column access
-                try:
-                    session['user_id'] = user['id']
-                    session['user_name'] = user['name']
-                    session['user_email'] = user['email']
-                    
-                    # Safely check for is_admin column
-                    try:
-                        session['is_admin'] = user.get('is_admin', False)
-                    except (KeyError, TypeError):
-                        session['is_admin'] = False  # Default to False if column doesn't exist
-                    
-                    print(f"✅ Session set for user: {user['name']} (Admin: {session.get('is_admin', False)})")
-                    
-                    # Redirect to intended page or home
-                    next_page = request.args.get('next')
-                    if next_page:
-                        return redirect(next_page)
-                    
-                    flash(f'Welcome back, {user["name"]}!', 'success')
-                    return redirect(url_for('index'))
-                    
-                except Exception as session_error:
-                    print(f"🔧 DEBUG: Session error: {session_error}")
-                    raise session_error
-            else:
-                flash('Invalid email or password. Please check your credentials and try again.', 'error')
-        
+            # ✅ 1. User not found
+            if not user:
+                flash('No account found with that email address.', 'error')
+                return render_template('login.html')
+            
+            # ✅ 2. Account not activated
+            if not user.get('is_active', False):
+                flash('Your account is not activated yet. Please check your email for the activation link or use the resend option below.', 'warning')
+                return render_template('login.html')
+            
+            # ✅ 3. Password check
+            if not check_password_hash(user['password_hash'], password):
+                flash('Incorrect password. Please try again.', 'error')
+                return render_template('login.html')
+            
+            # ✅ 4. Login successful
+            session['user_id'] = user['id']
+            session['user_name'] = user['name']
+            session['user_email'] = user['email']
+            session['is_admin'] = user.get('is_admin', False)
+            
+            print(f"✅ User logged in successfully: {user['name']} ({user['email']})")
+            
+            flash(f'Welcome back, {user["name"]}!', 'success')
+            
+            # Redirect admin or regular user
+            if session.get('is_admin', False):
+                return redirect(url_for('admin_dashboard'))
+            
+            # Redirect to intended page or home
+            next_page = request.args.get('next')
+            if next_page:
+                return redirect(next_page)
+            
+            return redirect(url_for('index'))
+            
         except Exception as e:
-            print(f"❌ Login error: {e}")
+            print(f"⚠️ LOGIN ERROR: {str(e)}")  # for debugging
             import traceback
             traceback.print_exc()
-            flash('An unexpected error occurred. Please try again.', 'error')
+            flash('An unexpected error occurred during login. Please try again.', 'error')
+            return render_template('login.html')
     
+    # GET request
     return render_template('login.html')
 
 @app.route('/logout')
