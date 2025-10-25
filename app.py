@@ -1605,8 +1605,13 @@ def login():
                 flash('No account found with that email address.', 'error')
                 return render_template('login.html')
             
-            # ✅ 2. Account not activated
-            if not user.get('is_active', False):
+            # ✅ 2. Account not activated - Safe column access for sqlite3.Row
+            try:
+                is_active = bool(user['is_active']) if user['is_active'] is not None else False
+            except (KeyError, IndexError):
+                is_active = False  # Default to False if column doesn't exist
+            
+            if not is_active:
                 flash('Your account is not activated yet. Please check your email for the activation link or use the resend option below.', 'warning')
                 return render_template('login.html')
             
@@ -1619,7 +1624,12 @@ def login():
             session['user_id'] = user['id']
             session['user_name'] = user['name']
             session['user_email'] = user['email']
-            session['is_admin'] = user.get('is_admin', False)
+            
+            # Safely access is_admin column for sqlite3.Row
+            try:
+                session['is_admin'] = bool(user['is_admin']) if user['is_admin'] is not None else False
+            except (KeyError, IndexError):
+                session['is_admin'] = False
             
             print(f"✅ User logged in successfully: {user['name']} ({user['email']})")
             
