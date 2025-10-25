@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}Resend Activation Email - {{ config.STORE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-info text-white text-center py-4">
+                    <h3 class="mb-0">
+                        <i class="bi bi-envelope-arrow-up me-2"></i>Resend Activation
+                    </h3>
+                    <p class="mb-0 mt-2 opacity-75">Get a new activation email</p>
+                </div>
+                
+                <div class="card-body p-4">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' if category == 'success' else 'info' }} alert-dismissible fade show" role="alert">
+                                    <i class="bi bi-{{ 'exclamation-triangle' if category == 'error' else 'check-circle' if category == 'success' else 'info-circle' }} me-2"></i>
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                    
+                    <div class="text-center mb-4">
+                        <p class="text-muted">
+                            Enter your email address and we'll send you a new activation link.
+                        </p>
+                    </div>
+                    
+                    <form method="POST" novalidate>
+                        <div class="mb-4">
+                            <label for="email" class="form-label fw-bold">
+                                <i class="bi bi-envelope me-2"></i>Email Address
+                            </label>
+                            <input type="email" class="form-control form-control-lg" id="email" name="email" 
+                                   placeholder="Enter your email address" required 
+                                   value="{{ request.form.get('email', '') }}" autofocus>
+                        </div>
+                        
+                        <div class="d-grid mb-3">
+                            <button type="submit" class="btn btn-info btn-lg">
+                                <i class="bi bi-send me-2"></i>Resend Activation Email
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <div class="text-center">
+                        <p class="text-muted mb-0">
+                            Remember your password? 
+                            <a href="{{ url_for('login') }}" class="text-decoration-none fw-bold">
+                                Try logging in
+                            </a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Help Section -->
+            <div class="card mt-4 border-0 bg-light">
+                <div class="card-body text-center py-4">
+                    <h6 class="text-info mb-3">
+                        <i class="bi bi-question-circle me-2"></i>Still Having Issues?
+                    </h6>
+                    <p class="text-muted small mb-3">
+                        If you're still not receiving activation emails, please check your spam folder 
+                        or contact our support team for assistance.
+                    </p>
+                    <div class="d-flex gap-2 justify-content-center">
+                        <a href="mailto:{{ config.CONTACT_EMAIL }}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-envelope me-1"></i>Email Support
+                        </a>
+                        <a href="{{ config.TELEGRAM_LINK }}" target="_blank" class="btn btn-outline-info btn-sm">
+                            <i class="bi bi-telegram me-1"></i>Telegram
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

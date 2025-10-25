@@ -355,6 +355,19 @@ def init_db():
         # Column already exists
         pass
     
+    # Add activation columns to users table if they don't exist (for existing databases)
+    try:
+        c.execute('ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT FALSE')
+    except sqlite3.OperationalError:
+        # Column already exists
+        pass
+    
+    try:
+        c.execute('ALTER TABLE users ADD COLUMN activation_token TEXT')
+    except sqlite3.OperationalError:
+        # Column already exists
+        pass
+    
     # Contact messages table
     c.execute('''CREATE TABLE IF NOT EXISTS contact_messages (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -391,6 +404,8 @@ def init_db():
         name TEXT NOT NULL,
         email TEXT UNIQUE NOT NULL,
         password_hash TEXT NOT NULL,
+        is_active BOOLEAN DEFAULT FALSE,
+        activation_token TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )''')
     
@@ -760,6 +775,17 @@ We value your understanding and look forward to serving you better.
 
 Best regards,
 {store_name} Support Team"""
+    elif email_type == "account_activation":
+        closing = f"""Account Benefits:
+- Track all your orders in one place
+- Faster checkout with saved information
+- Access download links anytime
+- Professional customer support
+
+Welcome to {store_name}!
+
+Best regards,
+{store_name} Team"""
     else:
         closing = f"""Features:
 - Faster delivery times
@@ -1445,15 +1471,41 @@ def register():
             conn.close()
             return render_template('register.html')
         
-        # Create new user
+        # Generate activation token
+        activation_token = str(uuid.uuid4())
+        
+        # Create new user (inactive by default)
         password_hash = generate_password_hash(password)
         try:
-            conn.execute('INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)',
-                        (name, email, password_hash))
+            conn.execute('INSERT INTO users (name, email, password_hash, is_active, activation_token) VALUES (?, ?, ?, ?, ?)',
+                        (name, email, password_hash, False, activation_token))
             conn.commit()
             conn.close()
             
-            flash('Account created successfully! Please log in.', 'success')
+            # Send activation email
+            base_url = app.config.get('BASE_URL', 'http://localhost:5000')
+            activation_link = f"{base_url}/activate/{activation_token}"
+            
+            email_subject = "Activate your DZKeyz account"
+            email_body = f"""Welcome to DZKeyz 🔑
+
+Please click the link below to activate your account and start shopping:
+
+👉 {activation_link}
+
+If you didn't create this account, just ignore this email.
+
+Best regards,
+DZKeyz Team"""
+            
+            # Send activation email
+            email_sent = send_email(email, email_subject, email_body, name, "account_activation")
+            
+            if email_sent:
+                flash('Account created! Please check your email to activate your account before logging in.', 'success')
+            else:
+                flash('Account created, but we couldn\'t send the activation email. Please contact support.', 'warning')
+            
             return redirect(url_for('login'))
         except Exception as e:
             flash('Error creating account. Please try again.', 'error')
@@ -1477,6 +1529,11 @@ def login():
         conn.close()
         
         if user and check_password_hash(user['password_hash'], password):
+            # Check if account is activated
+            if not user.get('is_active', False):
+                flash('Please activate your account first. Check your email for the activation link.', 'warning')
+                return render_template('login.html')
+            
             session['user_id'] = user['id']
             session['user_name'] = user['name']
             session['user_email'] = user['email']
@@ -1653,6 +1710,91 @@ def reset_password():
             return redirect(url_for('login'))
     
     return render_template('reset_password.html', token=token)
+
+@app.route('/activate/<token>')
+def activate_account(token):
+    """Activate user account with token"""
+    if not token:
+        return render_template('activation_result.html', 
+                             success=False, 
+                             message="Invalid activation link.")
+    
+    conn = get_db()
+    user = conn.execute('SELECT * FROM users WHERE activation_token = ?', (token,)).fetchone()
+    
+    if not user:
+        conn.close()
+        return render_template('activation_result.html', 
+                             success=False, 
+                             message="Invalid or expired activation link.")
+    
+    if user['is_active']:
+        conn.close()
+        return render_template('activation_result.html', 
+                             success=True, 
+                             message="Your account is already activated! You can log in now.")
+    
+    # Activate the account
+    try:
+        conn.execute('UPDATE users SET is_active = ?, activation_token = NULL WHERE id = ?', 
+                    (True, user['id']))
+        conn.commit()
+        conn.close()
+        
+        return render_template('activation_result.html', 
+                             success=True, 
+                             message="✅ Account activated! You can now log in to your account.")
+    except Exception as e:
+        conn.close()
+        return render_template('activation_result.html', 
+                             success=False, 
+                             message="An error occurred during activation. Please try again or contact support.")
+
+@app.route('/resend-activation', methods=['GET', 'POST'])
+def resend_activation():
+    """Resend activation email for unactivated accounts"""
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip().lower()
+        
+        if not email:
+            flash('Email address is required.', 'error')
+            return render_template('resend_activation.html')
+        
+        conn = get_db()
+        user = conn.execute('SELECT * FROM users WHERE email = ? AND is_active = FALSE', (email,)).fetchone()
+        
+        if user:
+            # Generate new activation token
+            new_token = str(uuid.uuid4())
+            conn.execute('UPDATE users SET activation_token = ? WHERE id = ?', (new_token, user['id']))
+            conn.commit()
+            
+            # Send new activation email
+            base_url = app.config.get('BASE_URL', 'http://localhost:5000')
+            activation_link = f"{base_url}/activate/{new_token}"
+            
+            email_subject = "Activate your DZKeyz account"
+            email_body = f"""Welcome to DZKeyz 🔑
+
+Please click the link below to activate your account and start shopping:
+
+👉 {activation_link}
+
+If you didn't create this account, just ignore this email.
+
+Best regards,
+DZKeyz Team"""
+            
+            send_email(email, email_subject, email_body, user['name'], "account_activation")
+            flash('Activation email sent! Please check your inbox.', 'success')
+        else:
+            # Don't reveal if email exists or not (security)
+            flash('If an unactivated account with that email exists, we\'ve sent a new activation email.', 'info')
+        
+        conn.close()
+        return redirect(url_for('login'))
+    
+    return render_template('resend_activation.html')
 
 @app.route('/admin')
 @admin_required

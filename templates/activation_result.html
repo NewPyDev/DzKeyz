@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}Account Activation - {{ config.STORE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-{{ 'success' if success else 'danger' }} text-white text-center py-4">
+                    <h3 class="mb-0">
+                        <i class="bi bi-{{ 'check-circle' if success else 'x-circle' }} me-2"></i>
+                        Account Activation
+                    </h3>
+                </div>
+                
+                <div class="card-body p-4 text-center">
+                    <div class="mb-4">
+                        <i class="bi bi-{{ 'check-circle-fill' if success else 'x-circle-fill' }} 
+                           text-{{ 'success' if success else 'danger' }}" 
+                           style="font-size: 4rem;"></i>
+                    </div>
+                    
+                    <h4 class="mb-3">
+                        {{ 'Welcome to DZKeyz!' if success else 'Activation Failed' }}
+                    </h4>
+                    
+                    <p class="text-muted mb-4">{{ message }}</p>
+                    
+                    {% if success %}
+                        <div class="d-grid gap-2">
+                            <a href="{{ url_for('login') }}" class="btn btn-success btn-lg">
+                                <i class="bi bi-box-arrow-in-right me-2"></i>Login to Your Account
+                            </a>
+                            <a href="{{ url_for('index') }}" class="btn btn-outline-primary">
+                                <i class="bi bi-house me-2"></i>Browse Products
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="d-grid gap-2">
+                            <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg">
+                                <i class="bi bi-person-plus me-2"></i>Create New Account
+                            </a>
+                            <a href="mailto:{{ config.CONTACT_EMAIL }}" class="btn btn-outline-warning">
+                                <i class="bi bi-envelope me-2"></i>Contact Support
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Help Section -->
+            {% if not success %}
+            <div class="card mt-4 border-0 bg-light">
+                <div class="card-body text-center py-4">
+                    <h6 class="text-warning mb-3">
+                        <i class="bi bi-question-circle me-2"></i>Need Help?
+                    </h6>
+                    <p class="text-muted small mb-3">
+                        If you're having trouble activating your account, please contact our support team 
+                        and we'll help you get set up.
+                    </p>
+                    <div class="d-flex gap-2 justify-content-center">
+                        <a href="mailto:{{ config.CONTACT_EMAIL }}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-envelope me-1"></i>Email Support
+                        </a>
+                        <a href="{{ config.TELEGRAM_LINK }}" target="_blank" class="btn btn-outline-info btn-sm">
+                            <i class="bi bi-telegram me-1"></i>Telegram
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="card mt-4 border-0 bg-light">
+                <div class="card-body text-center py-4">
+                    <h6 class="text-success mb-3">
+                        <i class="bi bi-star-fill me-2"></i>What's Next?
+                    </h6>
+                    <div class="row g-3 text-start">
+                        <div class="col-12">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-1-circle-fill text-primary me-3"></i>
+                                <span>Log in to your new account</span>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-2-circle-fill text-primary me-3"></i>
+                                <span>Browse our digital products</span>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-3-circle-fill text-primary me-3"></i>
+                                <span>Make your first purchase</span>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-4-circle-fill text-primary me-3"></i>
+                                <span>Track orders in "My Orders"</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
