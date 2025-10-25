@@ -201,7 +201,7 @@ app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['PRODUCTS_FOLDER'] = 'products'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 app.config['STORE_NAME'] = os.getenv('STORE_NAME', 'Digital Store')
-app.config['BASE_URL'] = os.getenv('BASE_URL', 'http://localhost:5000')
+app.config['BASE_URL'] = os.getenv('BASE_URL', 'https://dzkeyz.onrender.com')
 app.config['CONTACT_EMAIL'] = os.getenv('CONTACT_EMAIL', 'support@yourdomain.com')
 app.config['TELEGRAM_LINK'] = os.getenv('TELEGRAM_LINK', 'https://t.me/StockilyBot')
 
@@ -804,6 +804,73 @@ Best regards,
 {closing}"""
     
     return formatted_content
+
+def send_html_email(to, subject, html_body, text_body=None):
+    """Send HTML email using Resend.com - for activation emails"""
+    try:
+        # Load environment variables manually (more reliable)
+        env_vars = {}
+        try:
+            with open('.env', 'r') as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith('#') and '=' in line:
+                        key, value = line.split('=', 1)
+                        env_vars[key.strip()] = value.strip()
+        except Exception as e:
+            print(f"❌ Error loading .env: {e}")
+            return False
+        
+        # Get Resend configuration
+        api_key = env_vars.get('RESEND_API_KEY') or os.getenv('RESEND_API_KEY')
+        from_email = env_vars.get('MAIL_FROM') or os.getenv('MAIL_FROM', 'info@espamoda.store')
+        from_name = env_vars.get('MAIL_NAME') or os.getenv('MAIL_NAME', 'Espamoda')
+        
+        print(f"📧 Sending HTML email via Resend.com to: {to}")
+        print(f"📧 From: {from_name} <{from_email}>")
+        print(f"📧 Subject: {subject}")
+        print(f"📧 API Key: {api_key[:10] + '...' + api_key[-4:] if api_key else 'MISSING'}")
+        
+        if not api_key:
+            print("❌ Email sending failed: Missing RESEND_API_KEY in .env")
+            return False
+        
+        if not from_email:
+            print("❌ Email sending failed: Missing MAIL_FROM in .env")
+            return False
+        
+        # Set Resend API key
+        resend.api_key = api_key
+        
+        # Email parameters using official Resend format
+        params: resend.Emails.SendParams = {
+            "from": f"{from_name} <{from_email}>",
+            "to": [to],
+            "subject": subject,
+            "html": html_body
+        }
+        
+        # Add text version if provided
+        if text_body:
+            params["text"] = text_body
+        
+        print("📧 Sending HTML email via Resend.com SDK...")
+        
+        # Send the email using official SDK format
+        email_response = resend.Emails.send(params)
+        
+        email_id = email_response.get('id', 'Unknown')
+        
+        print(f"✅ HTML Email sent successfully to {to}")
+        print(f"📧 Email ID: {email_id}")
+        return True
+        
+    except Exception as e:
+        print(f"❌ HTML Email sending failed: {e}")
+        print(f"❌ Error type: {type(e).__name__}")
+        import traceback
+        traceback.print_exc()
+        return False
 
 def send_email(to, subject, body, customer_name=None, email_type="general", attachment_path=None):
     """Send email using Resend.com official Python SDK with professional formatting"""
@@ -1483,7 +1550,7 @@ def register():
             conn.close()
             
             # Send activation email
-            base_url = app.config.get('BASE_URL', 'http://localhost:5000')
+            base_url = app.config.get('BASE_URL', 'https://dzkeyz.onrender.com')
             activation_link = f"{base_url}/activate/{activation_token}"
             
             email_subject = "Activate your DZKeyz Account"
@@ -1495,7 +1562,11 @@ def register():
 </div>"""
             
             # Send activation email
-            email_sent = send_email(email, email_subject, email_body, name, "account_activation")
+            text_body = f"Welcome to DZKeyz! Please visit this link to activate your account: {activation_link}"
+            print(f"🔧 DEBUG: Attempting to send activation email to {email}")
+            print(f"🔧 DEBUG: Activation link: {activation_link}")
+            email_sent = send_html_email(email, email_subject, email_body, text_body)
+            print(f"🔧 DEBUG: Email sent result: {email_sent}")
             
             if email_sent:
                 flash('Account created! Please check your email to activate your account before logging in.', 'success')
@@ -1768,7 +1839,7 @@ def resend_activation():
             conn.commit()
             
             # Send new activation email
-            base_url = app.config.get('BASE_URL', 'http://localhost:5000')
+            base_url = app.config.get('BASE_URL', 'https://dzkeyz.onrender.com')
             activation_link = f"{base_url}/activate/{new_token}"
             
             email_subject = "Activate your DZKeyz Account"
@@ -1779,7 +1850,8 @@ def resend_activation():
    <p style="font-size:14px;color:#666;margin-top:20px;">If you didn't create this account, you can safely ignore this email.</p>
 </div>"""
             
-            send_email(email, email_subject, email_body, user['name'], "account_activation")
+            text_body = f"Welcome to DZKeyz! Please visit this link to activate your account: {activation_link}"
+            send_html_email(email, email_subject, email_body, text_body)
             flash('Activation email sent! Please check your inbox.', 'success')
         else:
             # Don't reveal if email exists or not (security)
