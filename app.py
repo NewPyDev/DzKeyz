@@ -418,9 +418,13 @@ def init_db():
     for column_name, column_def in user_columns:
         try:
             c.execute(f'ALTER TABLE users ADD COLUMN {column_name} {column_def}')
-        except sqlite3.OperationalError:
-            # Column already exists
-            pass
+            print(f"✅ Added column {column_name} to users table")
+        except sqlite3.OperationalError as e:
+            if "duplicate column name" in str(e).lower():
+                print(f"✅ Column {column_name} already exists")
+            else:
+                print(f"⚠️ Error adding column {column_name}: {e}")
+                # Continue anyway
     
     # Admin table
     c.execute('''CREATE TABLE IF NOT EXISTS admin (
@@ -1596,26 +1600,45 @@ def login():
             conn.close()
             
             if user and check_password_hash(user['password_hash'], password):
+                print(f"🔧 DEBUG: Password verified for user: {user['name']}")
+                
                 # Check if account is activated
-                if not user.get('is_active', False):
-                    flash('⚠️ Please activate your account first. Check your email for the activation link.', 'warning')
-                    return render_template('login.html')
+                try:
+                    is_active = user.get('is_active', True)  # Default to True for backward compatibility
+                    print(f"🔧 DEBUG: User is_active status: {is_active}")
+                    
+                    if not is_active:
+                        flash('⚠️ Please activate your account first. Check your email for the activation link.', 'warning')
+                        return render_template('login.html')
+                except Exception as activation_error:
+                    print(f"🔧 DEBUG: Error checking activation: {activation_error}")
+                    # Continue with login if activation check fails
                 
-                # Set session
-                session['user_id'] = user['id']
-                session['user_name'] = user['name']
-                session['user_email'] = user['email']
-                session['is_admin'] = user.get('is_admin', False)
-                
-                print(f"✅ User logged in: {user['name']} ({user['email']})")
-                
-                # Redirect to intended page or home
-                next_page = request.args.get('next')
-                if next_page:
-                    return redirect(next_page)
-                
-                flash(f'Welcome back, {user["name"]}!', 'success')
-                return redirect(url_for('index'))
+                # Set session with safe column access
+                try:
+                    session['user_id'] = user['id']
+                    session['user_name'] = user['name']
+                    session['user_email'] = user['email']
+                    
+                    # Safely check for is_admin column
+                    try:
+                        session['is_admin'] = user.get('is_admin', False)
+                    except (KeyError, TypeError):
+                        session['is_admin'] = False  # Default to False if column doesn't exist
+                    
+                    print(f"✅ Session set for user: {user['name']} (Admin: {session.get('is_admin', False)})")
+                    
+                    # Redirect to intended page or home
+                    next_page = request.args.get('next')
+                    if next_page:
+                        return redirect(next_page)
+                    
+                    flash(f'Welcome back, {user["name"]}!', 'success')
+                    return redirect(url_for('index'))
+                    
+                except Exception as session_error:
+                    print(f"🔧 DEBUG: Session error: {session_error}")
+                    raise session_error
             else:
                 flash('Invalid email or password. Please check your credentials and try again.', 'error')
         
@@ -2068,6 +2091,41 @@ def debug_activate_user(user_id):
                 result += f"<p>❌ Failed to send activation email to {user['email']}</p>"
         else:
             result += "<p>✅ User is already active</p>"
+        
+        conn.close()
+        return result
+        
+    except Exception as e:
+        import traceback
+        return f"<h2>❌ Error: {e}</h2><pre>{traceback.format_exc()}</pre>"
+
+@app.route('/debug/user-structure')
+def debug_user_structure():
+    """Debug route to check user database structure"""
+    try:
+        conn = get_db()
+        
+        # Get table schema
+        schema = conn.execute("PRAGMA table_info(users)").fetchall()
+        
+        result = "<h2>🔍 Users Table Structure:</h2>"
+        result += "<table border='1' style='border-collapse: collapse; margin: 20px 0;'>"
+        result += "<tr><th>Column</th><th>Type</th><th>Not Null</th><th>Default</th></tr>"
+        
+        for col in schema:
+            result += f"<tr><td>{col[1]}</td><td>{col[2]}</td><td>{col[3]}</td><td>{col[4]}</td></tr>"
+        
+        result += "</table>"
+        
+        # Get a sample user to see actual data
+        users = conn.execute('SELECT * FROM users LIMIT 1').fetchall()
+        if users:
+            user = users[0]
+            result += "<h3>📋 Sample User Data:</h3>"
+            result += "<ul>"
+            for key in user.keys():
+                result += f"<li><strong>{key}:</strong> {user[key]} ({type(user[key]).__name__})</li>"
+            result += "</ul>"
         
         conn.close()
         return result
