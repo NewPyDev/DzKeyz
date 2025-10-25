@@ -1597,20 +1597,19 @@ def login():
         
         try:
             conn = get_db()
-            user = conn.execute('SELECT * FROM users WHERE email = ?', (email,)).fetchone()
+            user_row = conn.execute('SELECT * FROM users WHERE email = ?', (email,)).fetchone()
             conn.close()
             
             # ✅ 1. User not found
-            if not user:
+            if not user_row:
                 flash('No account found with that email address.', 'error')
                 return render_template('login.html')
             
-            # ✅ 2. Account not activated - Safe column access for sqlite3.Row
-            try:
-                is_active = bool(user['is_active']) if user['is_active'] is not None else False
-            except (KeyError, IndexError):
-                is_active = False  # Default to False if column doesn't exist
+            # Convert sqlite3.Row to dict for easier access
+            user = dict(user_row)
             
+            # ✅ 2. Account not activated
+            is_active = user.get('is_active', False)
             if not is_active:
                 flash('Your account is not activated yet. Please check your email for the activation link or use the resend option below.', 'warning')
                 return render_template('login.html')
@@ -1624,12 +1623,7 @@ def login():
             session['user_id'] = user['id']
             session['user_name'] = user['name']
             session['user_email'] = user['email']
-            
-            # Safely access is_admin column for sqlite3.Row
-            try:
-                session['is_admin'] = bool(user['is_admin']) if user['is_admin'] is not None else False
-            except (KeyError, IndexError):
-                session['is_admin'] = False
+            session['is_admin'] = user.get('is_admin', False)
             
             print(f"✅ User logged in successfully: {user['name']} ({user['email']})")
             
@@ -2104,6 +2098,12 @@ def debug_activate_user(user_id):
     except Exception as e:
         import traceback
         return f"<h2>❌ Error: {e}</h2><pre>{traceback.format_exc()}</pre>"
+
+@app.route('/debug/force-restart')
+def debug_force_restart():
+    """Force server restart by causing a controlled error"""
+    import sys
+    return f"<h2>🔄 Server Info</h2><p>Python version: {sys.version}</p><p>Current time: {datetime.now()}</p><p>This should force a restart on next request.</p>"
 
 @app.route('/debug/user-structure')
 def debug_user_structure():
