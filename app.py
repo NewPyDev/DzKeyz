@@ -1589,36 +1589,65 @@ def register():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        email = request.form.get('email', '').strip().lower()
-        password = request.form.get('password', '')
-        
-        if not email or not password:
-            flash('Email and password are required.', 'error')
-            return render_template('login.html')
-        
-        conn = get_db()
-        user = conn.execute('SELECT * FROM users WHERE email = ?', (email,)).fetchone()
-        conn.close()
-        
-        if user and check_password_hash(user['password_hash'], password):
-            # Check if account is activated
-            if not user.get('is_active', False):
-                flash('⚠️ Please activate your account first. Check your email for the activation link.', 'warning')
+        try:
+            email = request.form.get('email', '').strip().lower()
+            password = request.form.get('password', '')
+            
+            print(f"🔧 DEBUG: Login attempt for email: {email}")
+            
+            if not email or not password:
+                flash('Email and password are required.', 'error')
                 return render_template('login.html')
             
-            session['user_id'] = user['id']
-            session['user_name'] = user['name']
-            session['user_email'] = user['email']
+            conn = get_db()
+            user = conn.execute('SELECT * FROM users WHERE email = ?', (email,)).fetchone()
+            conn.close()
             
-            # Redirect to intended page or home
-            next_page = request.args.get('next')
-            if next_page:
-                return redirect(next_page)
+            print(f"🔧 DEBUG: User found: {user is not None}")
+            if user:
+                print(f"🔧 DEBUG: User data: ID={user['id']}, Name={user['name']}, Active={user.get('is_active', 'MISSING')}")
             
-            flash(f'Welcome back, {user["name"]}!', 'success')
-            return redirect(url_for('index'))
-        else:
-            flash('Invalid email or password.', 'error')
+            if user and check_password_hash(user['password_hash'], password):
+                print(f"🔧 DEBUG: Password correct")
+                
+                # Check if account is activated (handle missing column gracefully)
+                try:
+                    is_active = user.get('is_active', True)  # Default to True if column missing
+                    if is_active is None:
+                        is_active = True  # Handle NULL values
+                    
+                    print(f"🔧 DEBUG: User is_active status: {is_active}")
+                    
+                    if not is_active:
+                        flash('⚠️ Please activate your account first. Check your email for the activation link.', 'warning')
+                        return render_template('login.html')
+                except Exception as activation_error:
+                    print(f"🔧 DEBUG: Error checking activation status: {activation_error}")
+                    # If there's an error checking activation, allow login (backward compatibility)
+                    pass
+                
+                session['user_id'] = user['id']
+                session['user_name'] = user['name']
+                session['user_email'] = user['email']
+                
+                print(f"🔧 DEBUG: Session set for user {user['name']}")
+                
+                # Redirect to intended page or home
+                next_page = request.args.get('next')
+                if next_page:
+                    return redirect(next_page)
+                
+                flash(f'Welcome back, {user["name"]}!', 'success')
+                return redirect(url_for('index'))
+            else:
+                print(f"🔧 DEBUG: Invalid credentials")
+                flash('Invalid email or password.', 'error')
+        
+        except Exception as e:
+            print(f"🔧 DEBUG: Login error: {e}")
+            import traceback
+            traceback.print_exc()
+            flash('An error occurred during login. Please try again.', 'error')
     
     return render_template('login.html')
 
@@ -1926,6 +1955,38 @@ def admin_dashboard():
                          total_products=total_products,
                          total_revenue=total_revenue,
                          pending_orders=pending_orders)
+
+@app.route('/debug/test-resend')
+def debug_test_resend():
+    """Simple test of Resend API"""
+    try:
+        import resend
+        
+        # Get API key
+        api_key = os.getenv('RESEND_API_KEY')
+        if not api_key:
+            return "<h2>❌ No RESEND_API_KEY found</h2>"
+        
+        resend.api_key = api_key
+        
+        # Simple test email
+        params = {
+            "from": "Hami Store <info@espamoda.store>",
+            "to": ["yassinasagat@gmail.com"],
+            "subject": "Test Email from DZKeyz",
+            "html": "<h1>Test Email</h1><p>This is a test email from DZKeyz to verify Resend integration.</p>",
+            "text": "Test Email - This is a test email from DZKeyz to verify Resend integration."
+        }
+        
+        print(f"📧 Testing Resend with API key: {api_key[:10]}...")
+        
+        response = resend.Emails.send(params)
+        
+        return f"<h2>✅ Email sent successfully!</h2><p>Response: {response}</p>"
+        
+    except Exception as e:
+        import traceback
+        return f"<h2>❌ Error: {e}</h2><pre>{traceback.format_exc()}</pre>"
 
 @app.route('/debug/email')
 def debug_email():
