@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Account Activated - {{ config.STORE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-lg border-0">
+                <div class="card-body text-center py-5">
+                    <!-- Success Icon -->
+                    <div class="mb-4">
+                        <div class="bg-success bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                            <i class="bi bi-check-circle-fill text-success" style="font-size: 2.5rem;"></i>
+                        </div>
+                    </div>
+                    
+                    <!-- Success Message -->
+                    <h2 class="text-success mb-3">Account Activated!</h2>
+                    <p class="text-muted mb-4 lead">
+                        ✅ Your account has been activated successfully!<br>
+                        You can now log in and start shopping securely.
+                    </p>
+                    
+                    <!-- Action Buttons -->
+                    <div class="d-grid gap-2 d-md-block">
+                        <a href="{{ url_for('login') }}" class="btn btn-dark btn-lg px-4 me-md-2">
+                            <i class="bi bi-box-arrow-in-right me-2"></i>Login Now
+                        </a>
+                        <a href="{{ url_for('index') }}" class="btn btn-outline-secondary btn-lg px-4">
+                            <i class="bi bi-house me-2"></i>Browse Products
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Welcome Benefits -->
+            <div class="card mt-4 border-0 bg-light">
+                <div class="card-body text-center py-4">
+                    <h6 class="text-primary mb-3">
+                        <i class="bi bi-star-fill me-2"></i>Welcome to DZKeyz!
+                    </h6>
+                    <div class="row g-2">
+                        <div class="col-12">
+                            <div class="d-flex align-items-center justify-content-center">
+                                <i class="bi bi-shield-check text-success me-3"></i>
+                                <small>Secure digital game keys</small>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="d-flex align-items-center justify-content-center">
+                                <i class="bi bi-lightning-charge text-warning me-3"></i>
+                                <small>Instant delivery after payment</small>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="d-flex align-items-center justify-content-center">
+                                <i class="bi bi-headset text-info me-3"></i>
+                                <small>24/7 customer support</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

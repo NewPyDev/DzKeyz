@@ -1486,17 +1486,13 @@ def register():
             base_url = app.config.get('BASE_URL', 'http://localhost:5000')
             activation_link = f"{base_url}/activate/{activation_token}"
             
-            email_subject = "Activate your DZKeyz account"
-            email_body = f"""Welcome to DZKeyz 🔑
-
-Please click the link below to activate your account and start shopping:
-
-👉 {activation_link}
-
-If you didn't create this account, just ignore this email.
-
-Best regards,
-DZKeyz Team"""
+            email_subject = "Activate your DZKeyz Account"
+            email_body = f"""<div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:20px;background:#fff;border-radius:10px;border:1px solid #eee;">
+   <h2 style="color:#111;">Welcome to DZKeyz 🔑</h2>
+   <p style="font-size:16px;color:#333;">Click below to activate your account and start shopping securely:</p>
+   <a href="{activation_link}" style="display:inline-block;margin-top:10px;padding:10px 20px;background-color:#111;color:#fff;text-decoration:none;border-radius:6px;">Activate Account</a>
+   <p style="font-size:14px;color:#666;margin-top:20px;">If you didn't create this account, you can safely ignore this email.</p>
+</div>"""
             
             # Send activation email
             email_sent = send_email(email, email_subject, email_body, name, "account_activation")
@@ -1531,7 +1527,7 @@ def login():
         if user and check_password_hash(user['password_hash'], password):
             # Check if account is activated
             if not user.get('is_active', False):
-                flash('Please activate your account first. Check your email for the activation link.', 'warning')
+                flash('⚠️ Please activate your account first. Check your email for the activation link.', 'warning')
                 return render_template('login.html')
             
             session['user_id'] = user['id']
@@ -1724,15 +1720,11 @@ def activate_account(token):
     
     if not user:
         conn.close()
-        return render_template('activation_result.html', 
-                             success=False, 
-                             message="Invalid or expired activation link.")
+        return redirect(url_for('activate_error'))
     
     if user['is_active']:
         conn.close()
-        return render_template('activation_result.html', 
-                             success=True, 
-                             message="Your account is already activated! You can log in now.")
+        return redirect(url_for('activate_success'))
     
     # Activate the account
     try:
@@ -1741,14 +1733,20 @@ def activate_account(token):
         conn.commit()
         conn.close()
         
-        return render_template('activation_result.html', 
-                             success=True, 
-                             message="✅ Account activated! You can now log in to your account.")
+        return redirect(url_for('activate_success'))
     except Exception as e:
         conn.close()
-        return render_template('activation_result.html', 
-                             success=False, 
-                             message="An error occurred during activation. Please try again or contact support.")
+        return redirect(url_for('activate_error'))
+
+@app.route('/activate-success')
+def activate_success():
+    """Account activation success page"""
+    return render_template('activate_success.html')
+
+@app.route('/activate-error')
+def activate_error():
+    """Account activation error page"""
+    return render_template('activate_error.html')
 
 @app.route('/resend-activation', methods=['GET', 'POST'])
 def resend_activation():
@@ -1773,17 +1771,13 @@ def resend_activation():
             base_url = app.config.get('BASE_URL', 'http://localhost:5000')
             activation_link = f"{base_url}/activate/{new_token}"
             
-            email_subject = "Activate your DZKeyz account"
-            email_body = f"""Welcome to DZKeyz 🔑
-
-Please click the link below to activate your account and start shopping:
-
-👉 {activation_link}
-
-If you didn't create this account, just ignore this email.
-
-Best regards,
-DZKeyz Team"""
+            email_subject = "Activate your DZKeyz Account"
+            email_body = f"""<div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:20px;background:#fff;border-radius:10px;border:1px solid #eee;">
+   <h2 style="color:#111;">Welcome to DZKeyz 🔑</h2>
+   <p style="font-size:16px;color:#333;">Click below to activate your account and start shopping securely:</p>
+   <a href="{activation_link}" style="display:inline-block;margin-top:10px;padding:10px 20px;background-color:#111;color:#fff;text-decoration:none;border-radius:6px;">Activate Account</a>
+   <p style="font-size:14px;color:#666;margin-top:20px;">If you didn't create this account, you can safely ignore this email.</p>
+</div>"""
             
             send_email(email, email_subject, email_body, user['name'], "account_activation")
             flash('Activation email sent! Please check your inbox.', 'success')
@@ -1838,6 +1832,9 @@ def admin_dashboard():
     products = conn.execute('SELECT * FROM products ORDER BY created_at DESC').fetchall()
     total_products = len(products)
     
+    # Get users for the sidebar
+    users = conn.execute('SELECT id, name, email, is_active, created_at FROM users ORDER BY created_at DESC').fetchall()
+    
     # Get recent orders (limit to 10)
     recent_orders = orders[:10] if orders else []
     
@@ -1847,10 +1844,82 @@ def admin_dashboard():
                          orders=orders,
                          recent_orders=recent_orders,
                          products=products,
+                         users=users,
                          total_orders=total_orders,
                          total_products=total_products,
                          total_revenue=total_revenue,
                          pending_orders=pending_orders)
+
+@app.route('/admin/users')
+@admin_required
+def admin_users():
+    """Admin users management panel"""
+    conn = get_db()
+    search = request.args.get('search', '').strip()
+    
+    if search:
+        users = conn.execute('''SELECT id, name, email, is_active, created_at 
+                               FROM users 
+                               WHERE name LIKE ? OR email LIKE ?
+                               ORDER BY created_at DESC''', 
+                            (f'%{search}%', f'%{search}%')).fetchall()
+    else:
+        users = conn.execute('''SELECT id, name, email, is_active, created_at 
+                               FROM users 
+                               ORDER BY created_at DESC''').fetchall()
+    
+    conn.close()
+    return render_template('admin_users.html', users=users, search=search)
+
+@app.route('/admin/users/toggle/<int:user_id>')
+@admin_required
+def admin_toggle_user(user_id):
+    """Toggle user active status"""
+    conn = get_db()
+    
+    # Don't allow deactivating the main admin (user ID 1)
+    if user_id == 1:
+        flash('Cannot deactivate the main admin account.', 'error')
+        return redirect(url_for('admin_users'))
+    
+    user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
+    if not user:
+        flash('User not found.', 'error')
+        return redirect(url_for('admin_users'))
+    
+    new_status = not user['is_active']
+    conn.execute('UPDATE users SET is_active = ? WHERE id = ?', (new_status, user_id))
+    conn.commit()
+    conn.close()
+    
+    status_text = "activated" if new_status else "deactivated"
+    flash(f'User {user["name"]} has been {status_text}.', 'success')
+    return redirect(url_for('admin_users'))
+
+@app.route('/admin/users/delete/<int:user_id>')
+@admin_required
+def admin_delete_user(user_id):
+    """Delete user account"""
+    conn = get_db()
+    
+    # Don't allow deleting the main admin (user ID 1)
+    if user_id == 1:
+        flash('Cannot delete the main admin account.', 'error')
+        return redirect(url_for('admin_users'))
+    
+    user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
+    if not user:
+        flash('User not found.', 'error')
+        return redirect(url_for('admin_users'))
+    
+    # Delete user and their orders
+    conn.execute('DELETE FROM orders WHERE user_id = ?', (user_id,))
+    conn.execute('DELETE FROM users WHERE id = ?', (user_id,))
+    conn.commit()
+    conn.close()
+    
+    flash(f'User {user["name"]} has been deleted.', 'success')
+    return redirect(url_for('admin_users'))
 
 @app.route('/admin/products')
 @admin_required
