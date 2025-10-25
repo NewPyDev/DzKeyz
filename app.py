@@ -213,14 +213,6 @@ os.makedirs('static/products', exist_ok=True)
 os.makedirs('templates', exist_ok=True)
 os.makedirs('receipts', exist_ok=True)
 
-# Initialize database when app is imported (for gunicorn)
-try:
-    init_db()
-    print("✅ Database initialized successfully")
-except Exception as e:
-    print(f"⚠️ Database initialization warning: {e}")
-    # Continue anyway - database might already exist
-
 # Database setup
 def init_db():
     conn = sqlite3.connect('store.db')
@@ -458,6 +450,14 @@ def init_db():
     
     conn.commit()
     conn.close()
+
+# Initialize database when app starts
+try:
+    init_db()
+    print("✅ Database initialized successfully")
+except Exception as e:
+    print(f"⚠️ Database initialization warning: {e}")
+    # Continue anyway - database might already exist
 
 def get_db():
     conn = sqlite3.connect('store.db')
@@ -1487,9 +1487,6 @@ def order_confirmation(order_id):
     print(f"✅ Order #{order_id} found: {order_dict['product_name']} for {order_dict['buyer_name']}")
     
     return render_template('thankyou.html', order=order_dict)
-
-# Initialize database
-init_db()
 
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
@@ -3995,13 +3992,7 @@ def download_product_file(order_id):
     return send_file(order['file_or_key_path'], as_attachment=True, download_name=download_name)
 
 if __name__ == '__main__':
-    try:
-        # Initialize database on startup
-        init_db()
-        print("✅ Database initialized successfully")
-    except Exception as e:
-        print(f"⚠️ Database initialization warning: {e}")
-        # Continue anyway - database might already exist
+    # Database is already initialized at module level
     
     # Get port from environment variable (for Render) or default to 5000
     port = int(os.environ.get('PORT', 5000))
