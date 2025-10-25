@@ -398,16 +398,29 @@ def init_db():
         FOREIGN KEY (order_id) REFERENCES orders (id)
     )''')
     
-    # Users table for customer accounts
+    # Users table for customer accounts - REBUILT
     c.execute('''CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         email TEXT UNIQUE NOT NULL,
         password_hash TEXT NOT NULL,
         is_active BOOLEAN DEFAULT FALSE,
+        is_admin BOOLEAN DEFAULT FALSE,
         activation_token TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )''')
+    
+    # Add new columns to existing users table if they don't exist
+    user_columns = [
+        ('is_admin', 'BOOLEAN DEFAULT FALSE'),
+    ]
+    
+    for column_name, column_def in user_columns:
+        try:
+            c.execute(f'ALTER TABLE users ADD COLUMN {column_name} {column_def}')
+        except sqlite3.OperationalError:
+            # Column already exists
+            pass
     
     # Admin table
     c.execute('''CREATE TABLE IF NOT EXISTS admin (
@@ -805,69 +818,59 @@ Best regards,
     
     return formatted_content
 
-def send_html_email(to, subject, html_body, text_body=None):
-    """Send HTML email using Resend.com - for activation emails"""
+def send_activation_email(user_email, user_name, activation_link):
+    """Send activation email using direct Resend API calls"""
     try:
-        # Load environment variables manually (more reliable)
-        env_vars = {}
-        try:
-            with open('.env', 'r') as f:
-                for line in f:
-                    line = line.strip()
-                    if line and not line.startswith('#') and '=' in line:
-                        key, value = line.split('=', 1)
-                        env_vars[key.strip()] = value.strip()
-        except Exception as e:
-            print(f"❌ Error loading .env: {e}")
+        import requests
+        
+        resend_key = os.getenv('RESEND_API_KEY')
+        if not resend_key:
+            print("❌ RESEND_API_KEY not found in environment")
             return False
         
-        # Get Resend configuration
-        api_key = env_vars.get('RESEND_API_KEY') or os.getenv('RESEND_API_KEY')
-        from_email = env_vars.get('MAIL_FROM') or os.getenv('MAIL_FROM', 'info@espamoda.store')
-        from_name = env_vars.get('MAIL_NAME') or os.getenv('MAIL_NAME', 'Espamoda')
+        print(f"📧 Sending activation email to: {user_email}")
+        print(f"📧 Activation link: {activation_link}")
+        print(f"📧 API Key: {resend_key[:10]}...{resend_key[-4:]}")
         
-        print(f"📧 Sending HTML email via Resend.com to: {to}")
-        print(f"📧 From: {from_name} <{from_email}>")
-        print(f"📧 Subject: {subject}")
-        print(f"📧 API Key: {api_key[:10] + '...' + api_key[-4:] if api_key else 'MISSING'}")
-        
-        if not api_key:
-            print("❌ Email sending failed: Missing RESEND_API_KEY in .env")
-            return False
-        
-        if not from_email:
-            print("❌ Email sending failed: Missing MAIL_FROM in .env")
-            return False
-        
-        # Set Resend API key
-        resend.api_key = api_key
-        
-        # Email parameters using official Resend format
-        params: resend.Emails.SendParams = {
-            "from": f"{from_name} <{from_email}>",
-            "to": [to],
-            "subject": subject,
-            "html": html_body
+        # Email data
+        data = {
+            "from": "Espamoda <info@espamoda.store>",
+            "to": [user_email],
+            "subject": "Activate your DZKeyz Account",
+            "html": f"""
+            <div style='font-family:Arial,sans-serif;padding:20px;background:#fff;border-radius:8px;border:1px solid #eee;max-width:600px;margin:auto'>
+                <h2 style='color:#111;margin-bottom:20px'>Welcome to DZKeyz 🔑</h2>
+                <p style='font-size:16px;color:#333;margin-bottom:20px'>Hi {user_name},</p>
+                <p style='font-size:16px;color:#333;margin-bottom:20px'>Click the button below to activate your account and start shopping securely:</p>
+                <div style='text-align:center;margin:30px 0'>
+                    <a href="{activation_link}" style='background:#111;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold;display:inline-block'>Activate Account</a>
+                </div>
+                <p style='font-size:14px;color:#666;margin-top:30px'>If you didn't create this account, you can safely ignore this email.</p>
+                <hr style='border:none;border-top:1px solid #eee;margin:20px 0'>
+                <p style='font-size:12px;color:#999;text-align:center'>DZKeyz - Your trusted digital game store</p>
+            </div>
+            """,
+            "text": f"Welcome to DZKeyz! Please visit this link to activate your account: {activation_link}"
         }
         
-        # Add text version if provided
-        if text_body:
-            params["text"] = text_body
+        # Send via Resend API
+        headers = {
+            "Authorization": f"Bearer {resend_key}",
+            "Content-Type": "application/json"
+        }
         
-        print("📧 Sending HTML email via Resend.com SDK...")
+        response = requests.post("https://api.resend.com/emails", json=data, headers=headers)
         
-        # Send the email using official SDK format
-        email_response = resend.Emails.send(params)
-        
-        email_id = email_response.get('id', 'Unknown')
-        
-        print(f"✅ HTML Email sent successfully to {to}")
-        print(f"📧 Email ID: {email_id}")
-        return True
-        
+        if response.status_code == 200:
+            result = response.json()
+            print(f"✅ Email sent successfully! ID: {result.get('id', 'Unknown')}")
+            return True
+        else:
+            print(f"❌ Email sending failed: {response.status_code} - {response.text}")
+            return False
+            
     except Exception as e:
-        print(f"❌ HTML Email sending failed: {e}")
-        print(f"❌ Error type: {type(e).__name__}")
+        print(f"❌ Email sending error: {e}")
         import traceback
         traceback.print_exc()
         return False
@@ -1529,59 +1532,50 @@ def register():
             flash('Passwords do not match.', 'error')
             return render_template('register.html')
         
-        # Check if email already exists
-        conn = get_db()
-        existing_user = conn.execute('SELECT id FROM users WHERE email = ?', (email,)).fetchone()
-        
-        if existing_user:
-            flash('An account with this email already exists.', 'error')
-            conn.close()
-            return render_template('register.html')
-        
-        # Generate activation token
-        activation_token = str(uuid.uuid4())
-        
-        # Create new user (inactive by default)
-        password_hash = generate_password_hash(password)
         try:
-            print(f"🔧 DEBUG: Creating user - Name: {name}, Email: {email}, Active: False")
-            conn.execute('INSERT INTO users (name, email, password_hash, is_active, activation_token) VALUES (?, ?, ?, ?, ?)',
-                        (name, email, password_hash, False, activation_token))
+            # Check if email already exists
+            conn = get_db()
+            existing_user = conn.execute('SELECT id FROM users WHERE email = ?', (email,)).fetchone()
+            
+            if existing_user:
+                flash('An account with this email already exists.', 'error')
+                conn.close()
+                return render_template('register.html')
+            
+            # Generate secure activation token
+            import secrets
+            activation_token = secrets.token_urlsafe(32)
+            
+            # Create new user (inactive by default)
+            password_hash = generate_password_hash(password)
+            
+            print(f"🔧 Creating user: {name} ({email})")
+            conn.execute('''INSERT INTO users (name, email, password_hash, is_active, is_admin, activation_token) 
+                           VALUES (?, ?, ?, ?, ?, ?)''',
+                        (name, email, password_hash, False, False, activation_token))
             conn.commit()
-            print(f"🔧 DEBUG: User created successfully in database")
             conn.close()
+            
+            print(f"✅ User created successfully in database")
             
             # Send activation email
             base_url = app.config.get('BASE_URL', 'https://dzkeyz.onrender.com')
             activation_link = f"{base_url}/activate/{activation_token}"
             
-            email_subject = "Activate your DZKeyz Account"
-            email_body = f"""<div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:20px;background:#fff;border-radius:10px;border:1px solid #eee;">
-   <h2 style="color:#111;">Welcome to DZKeyz 🔑</h2>
-   <p style="font-size:16px;color:#333;">Click below to activate your account and start shopping securely:</p>
-   <a href="{activation_link}" style="display:inline-block;margin-top:10px;padding:10px 20px;background-color:#111;color:#fff;text-decoration:none;border-radius:6px;">Activate Account</a>
-   <p style="font-size:14px;color:#666;margin-top:20px;">If you didn't create this account, you can safely ignore this email.</p>
-</div>"""
-            
-            # Send activation email
-            text_body = f"Welcome to DZKeyz! Please visit this link to activate your account: {activation_link}"
-            print(f"🔧 DEBUG: Attempting to send activation email to {email}")
-            print(f"🔧 DEBUG: Activation link: {activation_link}")
-            email_sent = send_html_email(email, email_subject, email_body, text_body)
-            print(f"🔧 DEBUG: Email sent result: {email_sent}")
+            email_sent = send_activation_email(email, name, activation_link)
             
             if email_sent:
-                flash('Account created! Please check your email to activate your account before logging in.', 'success')
+                flash('🎉 Account created successfully! Please check your email to activate your account.', 'success')
             else:
-                flash('Account created, but we couldn\'t send the activation email. Please contact support.', 'warning')
+                flash('Account created! However, we had trouble sending the activation email. You can request a new one from the login page.', 'warning')
             
             return redirect(url_for('login'))
+            
         except Exception as e:
-            print(f"🔧 DEBUG: Error creating user: {e}")
+            print(f"❌ Registration error: {e}")
             import traceback
             traceback.print_exc()
-            flash('Error creating account. Please try again.', 'error')
-            conn.close()
+            flash('An error occurred while creating your account. Please try again.', 'error')
             return render_template('register.html')
     
     return render_template('register.html')
@@ -1593,8 +1587,6 @@ def login():
             email = request.form.get('email', '').strip().lower()
             password = request.form.get('password', '')
             
-            print(f"🔧 DEBUG: Login attempt for email: {email}")
-            
             if not email or not password:
                 flash('Email and password are required.', 'error')
                 return render_template('login.html')
@@ -1603,34 +1595,19 @@ def login():
             user = conn.execute('SELECT * FROM users WHERE email = ?', (email,)).fetchone()
             conn.close()
             
-            print(f"🔧 DEBUG: User found: {user is not None}")
-            if user:
-                print(f"🔧 DEBUG: User data: ID={user['id']}, Name={user['name']}, Active={user.get('is_active', 'MISSING')}")
-            
             if user and check_password_hash(user['password_hash'], password):
-                print(f"🔧 DEBUG: Password correct")
+                # Check if account is activated
+                if not user.get('is_active', False):
+                    flash('⚠️ Please activate your account first. Check your email for the activation link.', 'warning')
+                    return render_template('login.html')
                 
-                # Check if account is activated (handle missing column gracefully)
-                try:
-                    is_active = user.get('is_active', True)  # Default to True if column missing
-                    if is_active is None:
-                        is_active = True  # Handle NULL values
-                    
-                    print(f"🔧 DEBUG: User is_active status: {is_active}")
-                    
-                    if not is_active:
-                        flash('⚠️ Please activate your account first. Check your email for the activation link.', 'warning')
-                        return render_template('login.html')
-                except Exception as activation_error:
-                    print(f"🔧 DEBUG: Error checking activation status: {activation_error}")
-                    # If there's an error checking activation, allow login (backward compatibility)
-                    pass
-                
+                # Set session
                 session['user_id'] = user['id']
                 session['user_name'] = user['name']
                 session['user_email'] = user['email']
+                session['is_admin'] = user.get('is_admin', False)
                 
-                print(f"🔧 DEBUG: Session set for user {user['name']}")
+                print(f"✅ User logged in: {user['name']} ({user['email']})")
                 
                 # Redirect to intended page or home
                 next_page = request.args.get('next')
@@ -1640,14 +1617,13 @@ def login():
                 flash(f'Welcome back, {user["name"]}!', 'success')
                 return redirect(url_for('index'))
             else:
-                print(f"🔧 DEBUG: Invalid credentials")
-                flash('Invalid email or password.', 'error')
+                flash('Invalid email or password. Please check your credentials and try again.', 'error')
         
         except Exception as e:
-            print(f"🔧 DEBUG: Login error: {e}")
+            print(f"❌ Login error: {e}")
             import traceback
             traceback.print_exc()
-            flash('An error occurred during login. Please try again.', 'error')
+            flash('An unexpected error occurred. Please try again.', 'error')
     
     return render_template('login.html')
 
@@ -1815,32 +1791,39 @@ def reset_password():
 @app.route('/activate/<token>')
 def activate_account(token):
     """Activate user account with token"""
-    if not token:
-        return render_template('activation_result.html', 
-                             success=False, 
-                             message="Invalid activation link.")
-    
-    conn = get_db()
-    user = conn.execute('SELECT * FROM users WHERE activation_token = ?', (token,)).fetchone()
-    
-    if not user:
-        conn.close()
-        return redirect(url_for('activate_error'))
-    
-    if user['is_active']:
-        conn.close()
-        return redirect(url_for('activate_success'))
-    
-    # Activate the account
     try:
+        if not token:
+            flash('Invalid activation link.', 'error')
+            return redirect(url_for('activate_error'))
+        
+        conn = get_db()
+        user = conn.execute('SELECT * FROM users WHERE activation_token = ?', (token,)).fetchone()
+        
+        if not user:
+            conn.close()
+            flash('Invalid or expired activation link.', 'error')
+            return redirect(url_for('activate_error'))
+        
+        if user['is_active']:
+            conn.close()
+            flash('Your account is already activated! You can log in now.', 'info')
+            return redirect(url_for('activate_success'))
+        
+        # Activate the account
         conn.execute('UPDATE users SET is_active = ?, activation_token = NULL WHERE id = ?', 
                     (True, user['id']))
         conn.commit()
         conn.close()
         
+        print(f"✅ Account activated for user: {user['name']} ({user['email']})")
+        flash('🎉 Account activated successfully! You can now log in.', 'success')
         return redirect(url_for('activate_success'))
+        
     except Exception as e:
-        conn.close()
+        print(f"❌ Activation error: {e}")
+        import traceback
+        traceback.print_exc()
+        flash('An error occurred during activation. Please try again.', 'error')
         return redirect(url_for('activate_error'))
 
 @app.route('/activate-success')
@@ -1863,35 +1846,37 @@ def resend_activation():
             flash('Email address is required.', 'error')
             return render_template('resend_activation.html')
         
-        conn = get_db()
-        user = conn.execute('SELECT * FROM users WHERE email = ? AND is_active = FALSE', (email,)).fetchone()
+        try:
+            conn = get_db()
+            user = conn.execute('SELECT * FROM users WHERE email = ? AND is_active = FALSE', (email,)).fetchone()
+            
+            if user:
+                # Generate new secure activation token
+                import secrets
+                new_token = secrets.token_urlsafe(32)
+                conn.execute('UPDATE users SET activation_token = ? WHERE id = ?', (new_token, user['id']))
+                conn.commit()
+                
+                # Send new activation email
+                base_url = app.config.get('BASE_URL', 'https://dzkeyz.onrender.com')
+                activation_link = f"{base_url}/activate/{new_token}"
+                
+                email_sent = send_activation_email(email, user['name'], activation_link)
+                
+                if email_sent:
+                    flash('✅ Activation email sent! Please check your inbox and spam folder.', 'success')
+                else:
+                    flash('We had trouble sending the email. Please try again in a few minutes.', 'warning')
+            else:
+                # Don't reveal if email exists or not (security)
+                flash('If an unactivated account with that email exists, we\'ve sent a new activation email.', 'info')
+            
+            conn.close()
+            
+        except Exception as e:
+            print(f"❌ Resend activation error: {e}")
+            flash('An error occurred. Please try again.', 'error')
         
-        if user:
-            # Generate new activation token
-            new_token = str(uuid.uuid4())
-            conn.execute('UPDATE users SET activation_token = ? WHERE id = ?', (new_token, user['id']))
-            conn.commit()
-            
-            # Send new activation email
-            base_url = app.config.get('BASE_URL', 'https://dzkeyz.onrender.com')
-            activation_link = f"{base_url}/activate/{new_token}"
-            
-            email_subject = "Activate your DZKeyz Account"
-            email_body = f"""<div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:20px;background:#fff;border-radius:10px;border:1px solid #eee;">
-   <h2 style="color:#111;">Welcome to DZKeyz 🔑</h2>
-   <p style="font-size:16px;color:#333;">Click below to activate your account and start shopping securely:</p>
-   <a href="{activation_link}" style="display:inline-block;margin-top:10px;padding:10px 20px;background-color:#111;color:#fff;text-decoration:none;border-radius:6px;">Activate Account</a>
-   <p style="font-size:14px;color:#666;margin-top:20px;">If you didn't create this account, you can safely ignore this email.</p>
-</div>"""
-            
-            text_body = f"Welcome to DZKeyz! Please visit this link to activate your account: {activation_link}"
-            send_html_email(email, email_subject, email_body, text_body)
-            flash('Activation email sent! Please check your inbox.', 'success')
-        else:
-            # Don't reveal if email exists or not (security)
-            flash('If an unactivated account with that email exists, we\'ve sent a new activation email.', 'info')
-        
-        conn.close()
         return redirect(url_for('login'))
     
     return render_template('resend_activation.html')
@@ -2140,21 +2125,20 @@ def admin_users():
         search = request.args.get('search', '').strip()
         
         if search:
-            users = conn.execute('''SELECT id, name, email, is_active, created_at 
+            users = conn.execute('''SELECT id, name, email, is_active, is_admin, created_at 
                                    FROM users 
-                                   WHERE name LIKE ? OR email LIKE ?
+                                   WHERE LOWER(name) LIKE LOWER(?) OR LOWER(email) LIKE LOWER(?)
                                    ORDER BY created_at DESC''', 
                                 (f'%{search}%', f'%{search}%')).fetchall()
         else:
-            users = conn.execute('''SELECT id, name, email, is_active, created_at 
+            users = conn.execute('''SELECT id, name, email, is_active, is_admin, created_at 
                                    FROM users 
                                    ORDER BY created_at DESC''').fetchall()
         
         conn.close()
-        print(f"🔧 DEBUG: Found {len(users)} users in database")
         return render_template('admin_users.html', users=users, search=search)
     except Exception as e:
-        print(f"🔧 DEBUG: Error in admin_users route: {e}")
+        print(f"❌ Error in admin_users route: {e}")
         import traceback
         traceback.print_exc()
         flash('Error loading users. Please try again.', 'error')
@@ -2164,44 +2148,61 @@ def admin_users():
 @admin_required
 def admin_toggle_user(user_id):
     """Toggle user active status"""
-    conn = get_db()
+    try:
+        conn = get_db()
+        user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
+        
+        if not user:
+            flash('User not found.', 'error')
+            return redirect(url_for('admin_users'))
+        
+        new_status = not user['is_active']
+        
+        # Clear activation token when manually activating
+        if new_status:
+            conn.execute('UPDATE users SET is_active = ?, activation_token = NULL WHERE id = ?', 
+                        (new_status, user_id))
+        else:
+            conn.execute('UPDATE users SET is_active = ? WHERE id = ?', (new_status, user_id))
+        
+        conn.commit()
+        conn.close()
+        
+        status_text = "activated" if new_status else "deactivated"
+        flash(f'✅ User {user["name"]} has been {status_text}.', 'success')
+        print(f"✅ Admin {status_text} user: {user['name']} ({user['email']})")
+        
+    except Exception as e:
+        print(f"❌ Error toggling user status: {e}")
+        flash('Error updating user status. Please try again.', 'error')
     
-    # All regular users can be toggled
-    
-    user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
-    if not user:
-        flash('User not found.', 'error')
-        return redirect(url_for('admin_users'))
-    
-    new_status = not user['is_active']
-    conn.execute('UPDATE users SET is_active = ? WHERE id = ?', (new_status, user_id))
-    conn.commit()
-    conn.close()
-    
-    status_text = "activated" if new_status else "deactivated"
-    flash(f'User {user["name"]} has been {status_text}.', 'success')
     return redirect(url_for('admin_users'))
 
 @app.route('/admin/users/delete/<int:user_id>')
 @admin_required
 def admin_delete_user(user_id):
     """Delete user account"""
-    conn = get_db()
+    try:
+        conn = get_db()
+        user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
+        
+        if not user:
+            flash('User not found.', 'error')
+            return redirect(url_for('admin_users'))
+        
+        # Delete user and their orders
+        conn.execute('DELETE FROM orders WHERE user_id = ?', (user_id,))
+        conn.execute('DELETE FROM users WHERE id = ?', (user_id,))
+        conn.commit()
+        conn.close()
+        
+        flash(f'✅ User {user["name"]} has been deleted.', 'success')
+        print(f"✅ Admin deleted user: {user['name']} ({user['email']})")
+        
+    except Exception as e:
+        print(f"❌ Error deleting user: {e}")
+        flash('Error deleting user. Please try again.', 'error')
     
-    # All regular users can be deleted
-    
-    user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
-    if not user:
-        flash('User not found.', 'error')
-        return redirect(url_for('admin_users'))
-    
-    # Delete user and their orders
-    conn.execute('DELETE FROM orders WHERE user_id = ?', (user_id,))
-    conn.execute('DELETE FROM users WHERE id = ?', (user_id,))
-    conn.commit()
-    conn.close()
-    
-    flash(f'User {user["name"]} has been deleted.', 'success')
     return redirect(url_for('admin_users'))
 
 @app.route('/admin/products')
