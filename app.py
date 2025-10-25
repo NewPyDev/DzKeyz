@@ -2105,10 +2105,7 @@ def admin_toggle_user(user_id):
     """Toggle user active status"""
     conn = get_db()
     
-    # Don't allow deactivating the main admin (user ID 1)
-    if user_id == 1:
-        flash('Cannot deactivate the main admin account.', 'error')
-        return redirect(url_for('admin_users'))
+    # All regular users can be toggled
     
     user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
     if not user:
@@ -2130,10 +2127,7 @@ def admin_delete_user(user_id):
     """Delete user account"""
     conn = get_db()
     
-    # Don't allow deleting the main admin (user ID 1)
-    if user_id == 1:
-        flash('Cannot delete the main admin account.', 'error')
-        return redirect(url_for('admin_users'))
+    # All regular users can be deleted
     
     user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
     if not user:
