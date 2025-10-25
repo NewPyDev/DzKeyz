@@ -118,7 +118,7 @@
                                             </td>
                                             <td>
                                                 <small class="text-muted">
-                                                    {{ user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else 'N/A' }}
+                                                    {{ user.created_at[:16] if user.created_at else 'N/A' }}
                                                 </small>
                                             </td>
                                             <td class="text-center">

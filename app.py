@@ -1930,39 +1930,71 @@ def admin_dashboard():
 @app.route('/debug/users')
 def debug_users():
     """Debug route to check users in database"""
-    conn = get_db()
-    users = conn.execute('SELECT * FROM users ORDER BY created_at DESC').fetchall()
-    conn.close()
-    
-    result = f"<h2>Users in Database ({len(users)} total):</h2>"
-    if users:
-        for user in users:
-            result += f"<p>ID: {user['id']}, Name: {user['name']}, Email: {user['email']}, Active: {user['is_active']}, Token: {user['activation_token'][:10] if user['activation_token'] else 'None'}...</p>"
-    else:
-        result += "<p>No users found in database</p>"
-    
-    return result
+    try:
+        conn = get_db()
+        
+        # Check if users table exists
+        tables = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='users'").fetchall()
+        if not tables:
+            return "<h2>❌ Users table does not exist!</h2>"
+        
+        # Get all users
+        users = conn.execute('SELECT * FROM users ORDER BY created_at DESC').fetchall()
+        conn.close()
+        
+        result = f"<h2>✅ Users in Database ({len(users)} total):</h2>"
+        if users:
+            for user in users:
+                result += f"<div style='border:1px solid #ccc; padding:10px; margin:10px;'>"
+                result += f"<strong>ID:</strong> {user['id']}<br>"
+                result += f"<strong>Name:</strong> {user['name']}<br>"
+                result += f"<strong>Email:</strong> {user['email']}<br>"
+                result += f"<strong>Active:</strong> {user['is_active']}<br>"
+                result += f"<strong>Token:</strong> {user['activation_token'][:20] if user['activation_token'] else 'None'}...<br>"
+                result += f"<strong>Created:</strong> {user['created_at']}<br>"
+                result += f"</div>"
+        else:
+            result += "<p>❌ No users found in database</p>"
+        
+        # Also check database schema
+        result += "<h3>Users Table Schema:</h3>"
+        schema = conn.execute("PRAGMA table_info(users)").fetchall()
+        for col in schema:
+            result += f"<p>{col}</p>"
+        
+        return result
+    except Exception as e:
+        import traceback
+        return f"<h2>❌ Error: {e}</h2><pre>{traceback.format_exc()}</pre>"
 
 @app.route('/admin/users')
 @admin_required
 def admin_users():
     """Admin users management panel"""
-    conn = get_db()
-    search = request.args.get('search', '').strip()
-    
-    if search:
-        users = conn.execute('''SELECT id, name, email, is_active, created_at 
-                               FROM users 
-                               WHERE name LIKE ? OR email LIKE ?
-                               ORDER BY created_at DESC''', 
-                            (f'%{search}%', f'%{search}%')).fetchall()
-    else:
-        users = conn.execute('''SELECT id, name, email, is_active, created_at 
-                               FROM users 
-                               ORDER BY created_at DESC''').fetchall()
-    
-    conn.close()
-    return render_template('admin_users.html', users=users, search=search)
+    try:
+        conn = get_db()
+        search = request.args.get('search', '').strip()
+        
+        if search:
+            users = conn.execute('''SELECT id, name, email, is_active, created_at 
+                                   FROM users 
+                                   WHERE name LIKE ? OR email LIKE ?
+                                   ORDER BY created_at DESC''', 
+                                (f'%{search}%', f'%{search}%')).fetchall()
+        else:
+            users = conn.execute('''SELECT id, name, email, is_active, created_at 
+                                   FROM users 
+                                   ORDER BY created_at DESC''').fetchall()
+        
+        conn.close()
+        print(f"🔧 DEBUG: Found {len(users)} users in database")
+        return render_template('admin_users.html', users=users, search=search)
+    except Exception as e:
+        print(f"🔧 DEBUG: Error in admin_users route: {e}")
+        import traceback
+        traceback.print_exc()
+        flash('Error loading users. Please try again.', 'error')
+        return redirect(url_for('admin_dashboard'))
 
 @app.route('/admin/users/toggle/<int:user_id>')
 @admin_required
