@@ -1927,6 +1927,109 @@ def admin_dashboard():
                          total_revenue=total_revenue,
                          pending_orders=pending_orders)
 
+@app.route('/debug/email')
+def debug_email():
+    """Debug route to test email sending"""
+    try:
+        # Test basic email sending
+        test_email = "yassinasagat@gmail.com"  # Use the same email from the user
+        
+        result = "<h2>🧪 Email Debug Test</h2>"
+        
+        # Check environment variables
+        result += "<h3>📧 Email Configuration:</h3>"
+        result += f"<p>RESEND_API_KEY: {'✅ Set' if os.getenv('RESEND_API_KEY') else '❌ Missing'}</p>"
+        result += f"<p>MAIL_FROM: {os.getenv('MAIL_FROM', 'Not set')}</p>"
+        result += f"<p>MAIL_NAME: {os.getenv('MAIL_NAME', 'Not set')}</p>"
+        
+        # Test simple email
+        result += "<h3>📤 Testing Simple Email:</h3>"
+        simple_success = send_html_email(
+            test_email, 
+            "Test Email from DZKeyz", 
+            "<h2>Test Email</h2><p>This is a test email to verify email functionality.</p>",
+            "Test Email - This is a test email to verify email functionality."
+        )
+        result += f"<p>Simple Email Result: {'✅ Success' if simple_success else '❌ Failed'}</p>"
+        
+        # Test activation email format
+        result += "<h3>🔑 Testing Activation Email:</h3>"
+        activation_link = "https://dzkeyz.onrender.com/activate/test-token-123"
+        activation_html = f"""<div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:20px;background:#fff;border-radius:10px;border:1px solid #eee;">
+   <h2 style="color:#111;">Welcome to DZKeyz 🔑</h2>
+   <p style="font-size:16px;color:#333;">Click below to activate your account and start shopping securely:</p>
+   <a href="{activation_link}" style="display:inline-block;margin-top:10px;padding:10px 20px;background-color:#111;color:#fff;text-decoration:none;border-radius:6px;">Activate Account</a>
+   <p style="font-size:14px;color:#666;margin-top:20px;">If you didn't create this account, you can safely ignore this email.</p>
+</div>"""
+        
+        activation_success = send_html_email(
+            test_email,
+            "Activate your DZKeyz Account - TEST",
+            activation_html,
+            f"Welcome to DZKeyz! Please visit this link to activate your account: {activation_link}"
+        )
+        result += f"<p>Activation Email Result: {'✅ Success' if activation_success else '❌ Failed'}</p>"
+        
+        return result
+        
+    except Exception as e:
+        import traceback
+        return f"<h2>❌ Error: {e}</h2><pre>{traceback.format_exc()}</pre>"
+
+@app.route('/debug/activate-user/<int:user_id>')
+def debug_activate_user(user_id):
+    """Debug route to manually activate a user and send email"""
+    try:
+        conn = get_db()
+        user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
+        
+        if not user:
+            return f"<h2>❌ User with ID {user_id} not found</h2>"
+        
+        result = f"<h2>🔧 Manual User Activation</h2>"
+        result += f"<p><strong>User:</strong> {user['name']} ({user['email']})</p>"
+        result += f"<p><strong>Current Status:</strong> {'Active' if user['is_active'] else 'Inactive'}</p>"
+        
+        if not user['is_active']:
+            # Generate new activation token
+            new_token = str(uuid.uuid4())
+            conn.execute('UPDATE users SET activation_token = ? WHERE id = ?', (new_token, user_id))
+            conn.commit()
+            
+            # Send activation email
+            base_url = app.config.get('BASE_URL', 'https://dzkeyz.onrender.com')
+            activation_link = f"{base_url}/activate/{new_token}"
+            
+            email_subject = "Activate your DZKeyz Account"
+            email_body = f"""<div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:20px;background:#fff;border-radius:10px;border:1px solid #eee;">
+   <h2 style="color:#111;">Welcome to DZKeyz 🔑</h2>
+   <p style="font-size:16px;color:#333;">Click below to activate your account and start shopping securely:</p>
+   <a href="{activation_link}" style="display:inline-block;margin-top:10px;padding:10px 20px;background-color:#111;color:#fff;text-decoration:none;border-radius:6px;">Activate Account</a>
+   <p style="font-size:14px;color:#666;margin-top:20px;">If you didn't create this account, you can safely ignore this email.</p>
+</div>"""
+            
+            text_body = f"Welcome to DZKeyz! Please visit this link to activate your account: {activation_link}"
+            
+            result += f"<p><strong>New Token:</strong> {new_token}</p>"
+            result += f"<p><strong>Activation Link:</strong> <a href='{activation_link}'>{activation_link}</a></p>"
+            
+            email_sent = send_html_email(user['email'], email_subject, email_body, text_body)
+            result += f"<p><strong>Email Sent:</strong> {'✅ Success' if email_sent else '❌ Failed'}</p>"
+            
+            if email_sent:
+                result += f"<p>✅ Activation email sent to {user['email']}</p>"
+            else:
+                result += f"<p>❌ Failed to send activation email to {user['email']}</p>"
+        else:
+            result += "<p>✅ User is already active</p>"
+        
+        conn.close()
+        return result
+        
+    except Exception as e:
+        import traceback
+        return f"<h2>❌ Error: {e}</h2><pre>{traceback.format_exc()}</pre>"
+
 @app.route('/debug/users')
 def debug_users():
     """Debug route to check users in database"""
