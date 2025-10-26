@@ -1,308 +1,271 @@
-# 🛍️ Digital Products Store - Algerian Payment System
+# 🔑 DZKeyz - Premium Digital Store Platform
 
-A comprehensive Flask web application for selling digital products (software keys, digital files, accounts) with integrated Algerian payment methods (Baridimob and CCP), Telegram bot automation, and user account management.
+[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://python.org)
+[![Flask](https://img.shields.io/badge/Flask-2.0+-green.svg)](https://flask.palletsprojects.com/)
+[![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3-purple.svg)](https://getbootstrap.com/)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-![Python](https://img.shields.io/badge/python-v3.8+-blue.svg)
-![Flask](https://img.shields.io/badge/flask-v2.0+-green.svg)
-![Bootstrap](https://img.shields.io/badge/bootstrap-v5.3-purple.svg)
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
+A modern, feature-rich digital marketplace built with Flask for selling digital products, game keys, software licenses, and digital downloads. Designed for entrepreneurs and businesses looking to create a professional online store with advanced customization and automation features.
 
-## ✨ Features
+## ✨ Features Overview
 
-### 🛒 **Customer Experience**
-- **Modern Storefront**: Clean, professional Bootstrap 5 design
-- **Smart Search**: Fuzzy search with typo tolerance
-- **User Accounts**: Registration, login, order tracking
-- **Product Categories**: Organized browsing with tags and categories
-- **Secure Checkout**: Payment proof upload with validation
-- **Instant Delivery**: Products delivered via Telegram/Email
-- **Professional Receipts**: Automatic PDF receipt generation
+### 🛍️ **Core E-commerce**
+- **Product Management** - Digital keys, file downloads, and bundles
+- **Secure Checkout** - Multiple payment methods (BaridiMob, CCP)
+- **Order Management** - Complete order lifecycle with receipts
+- **User Accounts** - Registration, login, order history
+- **Admin Dashboard** - Comprehensive store management
 
-### 🔧 **Admin Management**
-- **Complete Dashboard**: Sales analytics, order management
-- **Telegram Integration**: One-click order confirmation via bot
-- **Advanced Product Management**: Categories, tags, bundles, stock tracking
-- **Individual Key Management**: Add/remove license keys individually
-- **File Product Support**: Upload and manage digital files
-- **Professional Analytics**: Charts, revenue tracking, customer insights
-- **CSV Export**: Complete sales data export
+### 🎨 **Advanced Customization**
+- **Custom Branding** - Logo, colors, fonts, and themes
+- **Landing Pages** - Create promotional campaigns and special offers
+- **Responsive Design** - Mobile-first, professional UI
+- **Dynamic Theming** - Real-time brand customization
 
-### 📱 **Telegram Bot Features**
-- **Admin Notifications**: Instant order alerts with payment proof images
-- **One-Click Actions**: ✅ Confirm / ❌ Reject buttons in Telegram
-- **Customer Delivery**: Automatic product delivery to buyers
-- **Bot Commands**: `/start`, `/chatid` for customer setup
+### 🤖 **AI-Powered Features**
+- **AI Product Descriptions** - OpenAI integration for professional copywriting
+- **Smart Fallbacks** - Template-based descriptions when AI unavailable
+- **Context-Aware** - Uses product details for relevant content
 
-### 📧 **Email System**
-- **Professional Templates**: Branded emails with HTML formatting
-- **Order Confirmations**: Automatic email notifications
-- **Product Delivery**: Keys/download links sent via email
-- **Receipt Attachments**: PDF receipts attached to confirmation emails
+### 🔐 **Authentication & Security**
+- **Email Verification** - Secure account activation system
+- **Social Login** - Google and Discord OAuth 2.0 integration
+- **Password Security** - Bcrypt hashing and secure sessions
+- **Admin Protection** - Role-based access control
+
+### 📧 **Communication**
+- **Email System** - Resend.com integration for transactional emails
+- **Professional Templates** - Branded email designs
+- **Contact Forms** - Customer support with file attachments
+- **Telegram Integration** - Order notifications and support
+
+### 📊 **Management Tools**
+- **User Management** - Admin panel for customer accounts
+- **Analytics Dashboard** - Sales and performance metrics
+- **Inventory Control** - Stock management for digital keys
+- **Audit Logging** - Complete order and action history
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 - Python 3.8+
-- Telegram Bot Token
-- Email service (Resend.com recommended)
+- SQLite (included)
+- Resend.com account (for emails)
 
 ### Installation
 
 1. **Clone the repository**
-   ```bash
-   git clone https://github.com/yourusername/digital-store.git
-   cd digital-store
-   ```
+```bash
+git clone https://github.com/NewPyDev/DzKeyz.git
+cd DzKeyz
+```
 
 2. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
+```bash
+pip install -r requirements.txt
+```
 
 3. **Configure environment variables**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your configuration
-   ```
+```bash
+cp .env.example .env
+# Edit .env with your settings
+```
 
-4. **Run the application**
-   ```bash
-   python app.py
-   ```
+4. **Initialize the database**
+```bash
+python app.py
+```
 
-5. **Access the store**
-   - Store: http://localhost:5000
-   - Admin: http://localhost:5000/admin (admin/admin123)
+5. **Access your store**
+- **Store**: http://localhost:5000
+- **Admin**: http://localhost:5000/admin (admin/admin123)
 
 ## ⚙️ Configuration
 
-### Environment Variables (.env)
-```env
-# Flask Configuration
-SECRET_KEY=your-secret-key-change-this-in-production
-STORE_NAME=Your Store Name
-BASE_URL=http://localhost:5000
+### Required Environment Variables
 
-# Telegram Bot
-TELEGRAM_BOT_TOKEN=your-telegram-bot-token
-TELEGRAM_ADMIN_ID=your-telegram-user-id
+```env
+# Basic Configuration
+SECRET_KEY=your-secret-key-here
+STORE_NAME=Your Store Name
+BASE_URL=https://yourstore.com
 
 # Email Configuration (Resend.com)
-RESEND_API_KEY=your-resend-api-key
-MAIL_FROM=noreply@yourdomain.com
+RESEND_API_KEY=re_your_api_key
+MAIL_FROM=noreply@yourstore.com
 MAIL_NAME=Your Store Name
 
 # Payment Configuration
-BARIDIMOB_NUMBER=your-baridimob-number
-CCP_ACCOUNT=your-ccp-account
-CCP_KEY=your-ccp-key
+BARIDIMOB_RIP=your_rip_number
+CCP_ACCOUNT=your_ccp_account
 
 # Contact Information
-CONTACT_EMAIL=support@yourdomain.com
-TELEGRAM_LINK=https://t.me/YourBot
+CONTACT_EMAIL=support@yourstore.com
+TELEGRAM_LINK=https://t.me/yoursupport
+TELEGRAM_BOT_TOKEN=your_bot_token
+
+# Social Login (Optional)
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+DISCORD_CLIENT_ID=your_discord_client_id
+DISCORD_CLIENT_SECRET=your_discord_client_secret
+
+# AI Features (Optional)
+OPENAI_API_KEY=your_openai_api_key
 ```
 
-### Telegram Bot Setup
+## 🎯 Key Features Breakdown
 
-1. **Create a bot with @BotFather**
-   ```
-   /newbot
-   Choose a name: Your Store Bot
-   Choose a username: YourStoreBot
-   ```
+### 🛒 **Product Types**
+- **Digital Keys** - Game keys, software licenses with stock management
+- **File Downloads** - Digital products with secure download links
+- **Bundles** - Multiple products packaged together
 
-2. **Get your Telegram User ID**
-   - Message @userinfobot to get your user ID
-   - Add it to `TELEGRAM_ADMIN_ID` in .env
+### 🎨 **Branding System**
+- **Logo Upload** - Custom store branding
+- **Color Schemes** - Primary, secondary, background colors
+- **Typography** - 6 Google Fonts options
+- **Live Preview** - See changes before applying
+- **Preset Themes** - Quick professional themes
 
-3. **Set webhook (for production)**
-   ```bash
-   curl -X POST "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/setWebhook" \
-        -H "Content-Type: application/json" \
-        -d '{"url": "https://yourdomain.com/webhook/telegram"}'
-   ```
+### 🧭 **Landing Pages**
+- **Campaign Pages** - Create `/promo/summer-sale` style pages
+- **Product Showcases** - Feature specific products
+- **Banner Images** - Professional promotional graphics
+- **SEO Friendly** - Custom URLs and meta tags
 
-## 📊 Product Types Supported
+### 🤖 **AI Integration**
+- **Smart Descriptions** - Generate professional product descriptions
+- **Context Aware** - Uses product name, category, and tags
+- **Fallback System** - Works even without OpenAI API
+- **One-Click Generation** - Integrated into product forms
 
-### 🔑 **License Keys**
-- Individual key management
-- Automatic assignment (one key per customer)
-- Stock tracking with real-time updates
-- Usage tracking and audit trail
+### 🔐 **Social Authentication**
+- **Google Login** - OAuth 2.0 integration
+- **Discord Login** - Gaming community friendly
+- **Auto Account Creation** - No email verification needed
+- **Account Linking** - Connect social to existing accounts
 
-### 📁 **Digital Files**
-- Secure file upload and storage
-- Automatic download link generation
-- Time-limited access (48 hours, 3 downloads)
-- File replacement and version management
+### 📧 **Email System**
+- **Transactional Emails** - Order confirmations, receipts
+- **Account Activation** - Secure email verification
+- **Professional Design** - Branded email templates
+- **Reliable Delivery** - Resend.com integration
 
-### 📦 **Product Bundles**
-- Multi-product combinations
-- Percentage or fixed amount discounts
-- Bundle-specific imagery
-- Automatic savings calculation
+## 🏗️ Architecture
 
-## 🎨 User Interface
-
-### **Modern Design**
-- Bootstrap 5 responsive framework
-- Clean, professional appearance
-- Mobile-first design approach
-- Consistent branding throughout
-
-### **Advanced Features**
-- Smart search with typo tolerance
-- Category and tag filtering
-- Real-time stock indicators
-- Professional checkout flow
-
-## 🔒 Security Features
-
-- **Password Security**: Werkzeug password hashing
-- **Session Management**: Secure Flask sessions
-- **Input Validation**: Server-side validation
-- **SQL Injection Protection**: Parameterized queries
-- **File Upload Security**: Type and size validation
-- **Download Security**: Time-limited tokens
-
-## 📱 Mobile Experience
-
-- Fully responsive design
-- Touch-friendly interface
-- Mobile-optimized forms
-- Fast loading performance
-
-## 🛠️ Tech Stack
-
+### Technology Stack
 - **Backend**: Flask (Python)
-- **Database**: SQLite
-- **Frontend**: Bootstrap 5, JavaScript
+- **Database**: SQLite with row factory
+- **Frontend**: Bootstrap 5.3, Vanilla JavaScript
 - **Email**: Resend.com API
-- **Bot**: Telegram Bot API
-- **PDF**: ReportLab
-- **Search**: RapidFuzz
+- **Authentication**: Flask-Session, OAuth 2.0
+- **AI**: OpenAI GPT-3.5-turbo
+- **Payments**: Custom integration (BaridiMob, CCP)
 
-## 📁 Project Structure
+### Database Schema
+- **Users** - Customer accounts with social login support
+- **Products** - Digital items with categories and tags
+- **Orders** - Complete order lifecycle management
+- **Landing Pages** - Custom promotional pages
+- **Store Settings** - Branding and configuration
+- **Audit Logs** - Complete action history
 
-```
-digital-store/
-├── app.py                 # Main Flask application
-├── requirements.txt       # Python dependencies
-├── .env.example          # Environment variables template
-├── .gitignore            # Git ignore rules
-├── templates/            # HTML templates
-│   ├── base.html
-│   ├── index.html
-│   ├── login.html
-│   ├── register.html
-│   ├── my_orders.html
-│   └── admin/
-├── static/               # Static files (CSS, JS, images)
-├── uploads/              # Payment proof uploads (gitignored)
-├── products/             # Digital product files (gitignored)
-├── receipts/             # Generated receipts (gitignored)
-└── docs/                 # Documentation files
-```
+## 📱 Screenshots
 
-## 🔄 Order Workflow
+### Store Front
+- Modern, responsive design
+- Product grid with search and filtering
+- Professional checkout process
+- Mobile-optimized experience
 
-### Customer Journey
-1. **Browse** → Smart search, categories, featured items
-2. **Select** → View details, check stock availability
-3. **Register/Login** → Create account or continue as guest
-4. **Purchase** → Fill form, upload payment proof
-5. **Payment** → Follow Baridimob/CCP instructions
-6. **Confirmation** → Admin verifies and confirms
-7. **Delivery** → Instant product delivery via Telegram/Email
-8. **Receipt** → Professional PDF receipt generated
+### Admin Dashboard
+- Comprehensive management interface
+- Real-time analytics and metrics
+- User and order management
+- Branding customization tools
 
-### Admin Workflow
-1. **Notification** → Telegram alert with payment proof image
-2. **Review** → Check payment details and proof
-3. **Action** → ✅ Confirm or ❌ Reject via Telegram
-4. **Automation** → Product delivery and receipt generation
-5. **Analytics** → Track performance and revenue
-
-## 📈 Analytics & Reporting
-
-- Real-time dashboard with key metrics
-- Interactive charts (Chart.js)
-- Customer behavior analysis
-- Product performance tracking
-- Revenue analytics
-- CSV data export
-
-## 🌟 Advanced Features
-
-- **Smart Search**: Typo-tolerant product search
-- **User Accounts**: Registration and order tracking
-- **Bundle System**: Product combinations with discounts
-- **Category Management**: Organized product browsing
-- **Tag System**: Flexible product labeling
-- **Stock Management**: Real-time inventory tracking
-- **Professional Receipts**: Branded PDF generation
-- **Contact System**: Customer support integration
+### Social Features
+- One-click social login
+- Professional email templates
+- Custom landing pages
+- AI-generated content
 
 ## 🚀 Deployment
 
-### Production Deployment
-1. Use a production WSGI server (Gunicorn)
-2. Set up reverse proxy (Nginx)
-3. Configure HTTPS with SSL certificates
-4. Set up proper file permissions
-5. Use environment variables for sensitive data
-6. Configure database backups
-7. Set up monitoring and logging
+### Render.com (Recommended)
+1. Fork this repository
+2. Connect to Render.com
+3. Add environment variables
+4. Deploy automatically
 
-### Docker Deployment (Optional)
-```dockerfile
-FROM python:3.9-slim
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-COPY . .
-EXPOSE 5000
-CMD ["python", "app.py"]
+### Manual Deployment
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Set environment variables
+export FLASK_APP=app.py
+export FLASK_ENV=production
+
+# Run with Gunicorn
+gunicorn --bind 0.0.0.0:$PORT app:app
 ```
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
 
-## 📝 License
+### Development Setup
+```bash
+# Clone and setup
+git clone https://github.com/NewPyDev/DzKeyz.git
+cd DzKeyz
+pip install -r requirements.txt
+
+# Run in development mode
+python app.py
+```
+
+## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🆘 Support
 
-- **Documentation**: Check the `/docs` folder for detailed guides
-- **Issues**: Report bugs via GitHub Issues
-- **Email**: Contact support@yourdomain.com
-- **Telegram**: Join our support channel
+- **Documentation**: [Wiki](https://github.com/NewPyDev/DzKeyz/wiki)
+- **Issues**: [GitHub Issues](https://github.com/NewPyDev/DzKeyz/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/NewPyDev/DzKeyz/discussions)
+- **Email**: support@dzkeyz.com
 
-## 🎯 Roadmap
+## 🌟 Acknowledgments
 
-- [ ] Multi-language support
-- [ ] Advanced analytics dashboard
-- [ ] Customer loyalty program
-- [ ] API for third-party integrations
-- [ ] Mobile app (React Native)
-- [ ] Advanced inventory management
-- [ ] Multi-vendor support
+- **Flask** - The web framework that powers DZKeyz
+- **Bootstrap** - For the responsive UI components
+- **Resend.com** - Reliable email delivery service
+- **OpenAI** - AI-powered content generation
+- **Contributors** - Everyone who helped build this platform
 
-## ⭐ Acknowledgments
+## 🔮 Roadmap
 
-- Bootstrap team for the amazing CSS framework
-- Flask community for the excellent web framework
-- Telegram for the powerful Bot API
-- All contributors and users of this project
+- [ ] **Multi-language Support** - Internationalization
+- [ ] **Advanced Analytics** - Detailed sales reports
+- [ ] **API Integration** - RESTful API for third-party apps
+- [ ] **Mobile App** - Native mobile applications
+- [ ] **Cryptocurrency Payments** - Bitcoin, Ethereum support
+- [ ] **Affiliate System** - Partner and referral programs
 
 ---
 
-**Made with ❤️ for the Algerian digital marketplace**
+**Built with ❤️ for digital entrepreneurs worldwide**
 
-*This project aims to provide a complete, professional solution for selling digital products in Algeria with local payment method integration.*
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
+
+## 📊 Stats
+
+![GitHub stars](https://img.shields.io/github/stars/NewPyDev/DzKeyz?style=social)
+![GitHub forks](https://img.shields.io/github/forks/NewPyDev/DzKeyz?style=social)
+![GitHub issues](https://img.shields.io/github/issues/NewPyDev/DzKeyz)
+![GitHub pull requests](https://img.shields.io/github/issues-pr/NewPyDev/DzKeyz)
+
+**⭐ Star this repository if you find it useful!**
