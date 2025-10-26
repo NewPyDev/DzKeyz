@@ -1,0 +1,256 @@
+{% extends "admin_base.html" %}
+
+{% block page_title %}Branding & Appearance{% endblock %}
+{% block page_heading %}Branding & Appearance{% endblock %}
+{% block page_description %}Customize your store's visual identity{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-palette me-2"></i>Store Branding
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="row g-4">
+                        <!-- Store Identity -->
+                        <div class="col-12">
+                            <h6 class="text-primary mb-3">
+                                <i class="bi bi-shop me-2"></i>Store Identity
+                            </h6>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="store_name" class="form-label fw-bold">Store Name</label>
+                            <input type="text" class="form-control" id="store_name" name="store_name" 
+                                   value="{{ settings.get('store_name', 'Digital Store') }}" placeholder="Your Store Name">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="store_tagline" class="form-label fw-bold">Tagline</label>
+                            <input type="text" class="form-control" id="store_tagline" name="store_tagline" 
+                                   value="{{ settings.get('store_tagline', '') }}" placeholder="Your store tagline">
+                        </div>
+                        
+                        <div class="col-12">
+                            <label for="logo" class="form-label fw-bold">Logo</label>
+                            <input type="file" class="form-control" id="logo" name="logo" accept="image/*">
+                            <div class="form-text">Recommended size: 200x60px. Supports PNG, JPG, SVG.</div>
+                            {% if settings.get('logo') %}
+                                <div class="mt-2">
+                                    <img src="{{ url_for('static', filename='uploads/' + settings.get('logo')) }}" 
+                                         alt="Current Logo" style="max-height: 60px;">
+                                    <small class="text-muted ms-2">Current logo</small>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Colors -->
+                        <div class="col-12 mt-4">
+                            <h6 class="text-primary mb-3">
+                                <i class="bi bi-palette-fill me-2"></i>Color Scheme
+                            </h6>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label for="primary_color" class="form-label fw-bold">Primary Color</label>
+                            <div class="input-group">
+                                <input type="color" class="form-control form-control-color" id="primary_color" 
+                                       name="primary_color" value="{{ settings.get('primary_color', '#007bff') }}">
+                                <input type="text" class="form-control" value="{{ settings.get('primary_color', '#007bff') }}" 
+                                       readonly>
+                            </div>
+                            <div class="form-text">Main brand color for buttons and links</div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label for="secondary_color" class="form-label fw-bold">Secondary Color</label>
+                            <div class="input-group">
+                                <input type="color" class="form-control form-control-color" id="secondary_color" 
+                                       name="secondary_color" value="{{ settings.get('secondary_color', '#6c757d') }}">
+                                <input type="text" class="form-control" value="{{ settings.get('secondary_color', '#6c757d') }}" 
+                                       readonly>
+                            </div>
+                            <div class="form-text">Secondary elements and borders</div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label for="background_color" class="form-label fw-bold">Background Color</label>
+                            <div class="input-group">
+                                <input type="color" class="form-control form-control-color" id="background_color" 
+                                       name="background_color" value="{{ settings.get('background_color', '#ffffff') }}">
+                                <input type="text" class="form-control" value="{{ settings.get('background_color', '#ffffff') }}" 
+                                       readonly>
+                            </div>
+                            <div class="form-text">Main background color</div>
+                        </div>
+                        
+                        <!-- Typography -->
+                        <div class="col-12 mt-4">
+                            <h6 class="text-primary mb-3">
+                                <i class="bi bi-fonts me-2"></i>Typography
+                            </h6>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="font_family" class="form-label fw-bold">Font Family</label>
+                            <select class="form-select" id="font_family" name="font_family">
+                                <option value="Inter" {{ 'selected' if settings.get('font_family') == 'Inter' else '' }}>Inter (Modern)</option>
+                                <option value="Roboto" {{ 'selected' if settings.get('font_family') == 'Roboto' else '' }}>Roboto (Clean)</option>
+                                <option value="Open Sans" {{ 'selected' if settings.get('font_family') == 'Open Sans' else '' }}>Open Sans (Friendly)</option>
+                                <option value="Lato" {{ 'selected' if settings.get('font_family') == 'Lato' else '' }}>Lato (Professional)</option>
+                                <option value="Poppins" {{ 'selected' if settings.get('font_family') == 'Poppins' else '' }}>Poppins (Trendy)</option>
+                                <option value="Montserrat" {{ 'selected' if settings.get('font_family') == 'Montserrat' else '' }}>Montserrat (Bold)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-2"></i>Save Changes
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="previewChanges()">
+                            <i class="bi bi-eye me-2"></i>Preview
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-lightbulb me-2"></i>Branding Tips
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-flex flex-column gap-3">
+                    <div class="d-flex">
+                        <i class="bi bi-palette text-primary me-3 mt-1"></i>
+                        <div>
+                            <strong>Color Psychology</strong>
+                            <p class="small text-muted mb-0">Blue builds trust, green suggests growth, red creates urgency.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex">
+                        <i class="bi bi-image text-primary me-3 mt-1"></i>
+                        <div>
+                            <strong>Logo Guidelines</strong>
+                            <p class="small text-muted mb-0">Use PNG with transparent background for best results.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex">
+                        <i class="bi bi-fonts text-primary me-3 mt-1"></i>
+                        <div>
+                            <strong>Font Selection</strong>
+                            <p class="small text-muted mb-0">Choose fonts that reflect your brand personality.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex">
+                        <i class="bi bi-phone text-primary me-3 mt-1"></i>
+                        <div>
+                            <strong>Mobile First</strong>
+                            <p class="small text-muted mb-0">All changes are automatically mobile-responsive.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-star me-2"></i>Quick Presets
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-primary btn-sm" onclick="applyPreset('modern')">
+                        Modern Blue
+                    </button>
+                    <button class="btn btn-outline-success btn-sm" onclick="applyPreset('nature')">
+                        Nature Green
+                    </button>
+                    <button class="btn btn-outline-danger btn-sm" onclick="applyPreset('bold')">
+                        Bold Red
+                    </button>
+                    <button class="btn btn-outline-dark btn-sm" onclick="applyPreset('minimal')">
+                        Minimal Dark
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Color input synchronization
+document.querySelectorAll('input[type="color"]').forEach(colorInput => {
+    const textInput = colorInput.nextElementSibling;
+    
+    colorInput.addEventListener('input', function() {
+        textInput.value = this.value;
+    });
+});
+
+// Preset themes
+function applyPreset(theme) {
+    const presets = {
+        modern: { primary: '#007bff', secondary: '#6c757d', background: '#ffffff', font: 'Inter' },
+        nature: { primary: '#28a745', secondary: '#6c757d', background: '#f8f9fa', font: 'Open Sans' },
+        bold: { primary: '#dc3545', secondary: '#343a40', background: '#ffffff', font: 'Montserrat' },
+        minimal: { primary: '#343a40', secondary: '#6c757d', background: '#f8f9fa', font: 'Lato' }
+    };
+    
+    const preset = presets[theme];
+    if (preset) {
+        document.getElementById('primary_color').value = preset.primary;
+        document.getElementById('primary_color').nextElementSibling.value = preset.primary;
+        document.getElementById('secondary_color').value = preset.secondary;
+        document.getElementById('secondary_color').nextElementSibling.value = preset.secondary;
+        document.getElementById('background_color').value = preset.background;
+        document.getElementById('background_color').nextElementSibling.value = preset.background;
+        document.getElementById('font_family').value = preset.font;
+    }
+}
+
+// Preview functionality
+function previewChanges() {
+    const primary = document.getElementById('primary_color').value;
+    const secondary = document.getElementById('secondary_color').value;
+    const background = document.getElementById('background_color').value;
+    const font = document.getElementById('font_family').value;
+    
+    // Apply temporary styles
+    document.documentElement.style.setProperty('--bs-primary', primary);
+    document.documentElement.style.setProperty('--bs-secondary', secondary);
+    document.documentElement.style.setProperty('--bs-body-bg', background);
+    document.documentElement.style.setProperty('--bs-body-font-family', `'${font}', sans-serif`);
+    
+    // Show preview notification
+    const toast = document.createElement('div');
+    toast.className = 'toast align-items-center text-white bg-info border-0 position-fixed top-0 end-0 m-3';
+    toast.style.zIndex = '9999';
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">Preview applied! Save to make permanent.</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" onclick="this.parentElement.parentElement.remove()"></button>
+        </div>
+    `;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => toast.remove(), 5000);
+}
+</script>
+
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&family=Open+Sans:wght@300;400;600;700&family=Lato:wght@300;400;700&family=Poppins:wght@300;400;500;600;700&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+{% endblock %}

@@ -2442,6 +2442,123 @@ def admin_delete_landing_page(page_id):
     
     return redirect(url_for('admin_landing_pages'))
 
+@app.route('/admin/branding', methods=['GET', 'POST'])
+@admin_required
+def admin_branding():
+    """Admin branding and appearance settings"""
+    if request.method == 'POST':
+        try:
+            # Handle logo upload
+            logo_filename = None
+            if 'logo' in request.files:
+                file = request.files['logo']
+                if file and file.filename:
+                    filename = secure_filename(file.filename)
+                    logo_filename = f"logo_{int(time.time())}_{filename}"
+                    file.save(os.path.join(app.config['UPLOAD_FOLDER'], logo_filename))
+            
+            # Get form data
+            settings = {
+                'primary_color': request.form.get('primary_color', '#007bff'),
+                'secondary_color': request.form.get('secondary_color', '#6c757d'),
+                'background_color': request.form.get('background_color', '#ffffff'),
+                'font_family': request.form.get('font_family', 'Inter'),
+                'store_name': request.form.get('store_name', 'Digital Store'),
+                'store_tagline': request.form.get('store_tagline', ''),
+            }
+            
+            if logo_filename:
+                settings['logo'] = logo_filename
+            
+            conn = get_db()
+            
+            # Update or insert settings
+            for key, value in settings.items():
+                conn.execute('''INSERT OR REPLACE INTO store_settings (setting_key, setting_value, updated_at)
+                               VALUES (?, ?, ?)''', (key, value, datetime.now().isoformat()))
+            
+            conn.commit()
+            conn.close()
+            
+            flash('Branding settings updated successfully!', 'success')
+            return redirect(url_for('admin_branding'))
+            
+        except Exception as e:
+            print(f"❌ Error updating branding: {e}")
+            flash('Error updating branding settings.', 'error')
+    
+    # Get current settings
+    conn = get_db()
+    settings_raw = conn.execute('SELECT setting_key, setting_value FROM store_settings').fetchall()
+    conn.close()
+    
+    settings = {row['setting_key']: row['setting_value'] for row in settings_raw}
+    
+    return render_template('admin_branding.html', settings=settings)
+
+@app.route('/api/branding-css')
+def branding_css():
+    """Generate dynamic CSS based on branding settings"""
+    conn = get_db()
+    settings_raw = conn.execute('SELECT setting_key, setting_value FROM store_settings').fetchall()
+    conn.close()
+    
+    settings = {row['setting_key']: row['setting_value'] for row in settings_raw}
+    
+    # Default values
+    primary_color = settings.get('primary_color', '#007bff')
+    secondary_color = settings.get('secondary_color', '#6c757d')
+    background_color = settings.get('background_color', '#ffffff')
+    font_family = settings.get('font_family', 'Inter')
+    
+    css = f"""
+    :root {{
+        --bs-primary: {primary_color};
+        --bs-secondary: {secondary_color};
+        --bs-body-bg: {background_color};
+        --bs-body-font-family: '{font_family}', sans-serif;
+    }}
+    
+    .btn-primary {{
+        background-color: {primary_color};
+        border-color: {primary_color};
+    }}
+    
+    .btn-primary:hover {{
+        background-color: {primary_color}dd;
+        border-color: {primary_color}dd;
+    }}
+    
+    .text-primary {{
+        color: {primary_color} !important;
+    }}
+    
+    .bg-primary {{
+        background-color: {primary_color} !important;
+    }}
+    
+    .navbar-brand, .admin-nav-link.active {{
+        color: {primary_color} !important;
+    }}
+    
+    body {{
+        font-family: '{font_family}', sans-serif;
+        background-color: {background_color};
+    }}
+    
+    .card {{
+        border: 1px solid {secondary_color}20;
+    }}
+    
+    .product-card:hover {{
+        border-color: {primary_color}40;
+        box-shadow: 0 4px 12px {primary_color}20;
+    }}
+    """
+    
+    response = app.response_class(css, mimetype='text/css')
+    return response
+
 @app.route('/admin/products')
 @admin_required
 def admin_products():
