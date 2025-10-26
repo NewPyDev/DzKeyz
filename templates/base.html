@@ -35,8 +35,13 @@
     <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom sticky-top">
         <div class="container">
             <a class="navbar-brand fw-bold fs-4" href="{{ url_for('index') }}">
-                <i class="bi bi-shop text-primary me-2"></i>
-                {{ config.STORE_NAME }}
+                {% if store_logo %}
+                    <img src="{{ url_for('static', filename='uploads/' + store_logo) }}" 
+                         alt="{{ store_name }}" style="max-height: 40px; max-width: 150px;" class="me-2">
+                {% else %}
+                    <i class="bi bi-shop text-primary me-2"></i>
+                {% endif %}
+                {{ store_name }}
             </a>
             
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">

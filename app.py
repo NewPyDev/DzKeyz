@@ -2515,6 +2515,28 @@ def admin_branding():
     
     return render_template('admin_branding.html', settings=settings)
 
+@app.context_processor
+def inject_branding_settings():
+    """Make branding settings available to all templates"""
+    try:
+        conn = get_db()
+        settings_raw = conn.execute('SELECT setting_key, setting_value FROM store_settings').fetchall()
+        conn.close()
+        
+        settings = {row['setting_key']: row['setting_value'] for row in settings_raw}
+        
+        return {
+            'branding': settings,
+            'store_name': settings.get('store_name', app.config.get('STORE_NAME', 'Digital Store')),
+            'store_logo': settings.get('logo', None)
+        }
+    except:
+        return {
+            'branding': {},
+            'store_name': app.config.get('STORE_NAME', 'Digital Store'),
+            'store_logo': None
+        }
+
 @app.route('/api/branding-css')
 def branding_css():
     """Generate dynamic CSS based on branding settings"""
@@ -2572,6 +2594,52 @@ def branding_css():
     .product-card:hover {{
         border-color: {primary_color}40;
         box-shadow: 0 4px 12px {primary_color}20;
+    }}
+    
+    /* Admin Panel Styling */
+    .admin-sidebar {{
+        background-color: {background_color} !important;
+    }}
+    
+    .admin-nav-link {{
+        color: {secondary_color} !important;
+    }}
+    
+    .admin-nav-link:hover {{
+        color: {primary_color} !important;
+        background-color: {primary_color}10 !important;
+    }}
+    
+    .admin-nav-link.active {{
+        color: {primary_color} !important;
+        background-color: {primary_color}15 !important;
+    }}
+    
+    .stats-card {{
+        border: 1px solid {secondary_color}20;
+        background-color: {background_color};
+    }}
+    
+    .stats-card:hover {{
+        border-color: {primary_color}30;
+    }}
+    
+    .btn-outline-primary {{
+        color: {primary_color};
+        border-color: {primary_color};
+    }}
+    
+    .btn-outline-primary:hover {{
+        background-color: {primary_color};
+        border-color: {primary_color};
+    }}
+    
+    .text-secondary {{
+        color: {secondary_color} !important;
+    }}
+    
+    .bg-secondary {{
+        background-color: {secondary_color} !important;
     }}
     """
     
