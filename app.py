@@ -3,6 +3,7 @@ import sqlite3
 import uuid
 import json
 import smtplib
+import time
 from datetime import datetime, timedelta
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -440,6 +441,36 @@ def init_db():
         max_downloads INTEGER DEFAULT 3,
         FOREIGN KEY (order_id) REFERENCES orders (id),
         FOREIGN KEY (product_id) REFERENCES products (id)
+    )''')
+    
+    # Landing pages table for custom promo pages
+    c.execute('''CREATE TABLE IF NOT EXISTS landing_pages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        slug TEXT UNIQUE NOT NULL,
+        description TEXT,
+        banner_image TEXT,
+        is_active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )''')
+    
+    # Landing page products relationship
+    c.execute('''CREATE TABLE IF NOT EXISTS landing_page_products (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        landing_page_id INTEGER,
+        product_id INTEGER,
+        display_order INTEGER DEFAULT 0,
+        FOREIGN KEY (landing_page_id) REFERENCES landing_pages (id) ON DELETE CASCADE,
+        FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE CASCADE
+    )''')
+    
+    # Store branding settings
+    c.execute('''CREATE TABLE IF NOT EXISTS store_settings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        setting_key TEXT UNIQUE NOT NULL,
+        setting_value TEXT,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )''')
     
     # Create default admin if not exists
@@ -2265,6 +2296,151 @@ def admin_delete_user(user_id):
         flash('Error deleting user. Please try again.', 'error')
     
     return redirect(url_for('admin_users'))
+
+@app.route('/admin/landing-pages')
+@admin_required
+def admin_landing_pages():
+    """Admin landing pages management"""
+    try:
+        conn = get_db()
+        pages = conn.execute('''SELECT lp.*, COUNT(lpp.product_id) as product_count
+                               FROM landing_pages lp
+                               LEFT JOIN landing_page_products lpp ON lp.id = lpp.landing_page_id
+                               GROUP BY lp.id
+                               ORDER BY lp.created_at DESC''').fetchall()
+        conn.close()
+        return render_template('admin_landing_pages.html', pages=pages)
+    except Exception as e:
+        print(f"❌ Error loading landing pages: {e}")
+        flash('Error loading landing pages.', 'error')
+        return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/landing-pages/add', methods=['GET', 'POST'])
+@admin_required
+def admin_add_landing_page():
+    """Add new landing page"""
+    if request.method == 'POST':
+        try:
+            title = request.form.get('title', '').strip()
+            slug = request.form.get('slug', '').strip().lower()
+            description = request.form.get('description', '').strip()
+            product_ids = request.form.getlist('product_ids')
+            
+            if not title or not slug:
+                flash('Title and URL slug are required.', 'error')
+                return render_template('admin_add_landing_page.html')
+            
+            # Handle banner image upload
+            banner_image = None
+            if 'banner_image' in request.files:
+                file = request.files['banner_image']
+                if file and file.filename:
+                    filename = secure_filename(file.filename)
+                    banner_image = f"landing_{int(time.time())}_{filename}"
+                    file.save(os.path.join(app.config['UPLOAD_FOLDER'], banner_image))
+            
+            conn = get_db()
+            
+            # Check if slug already exists
+            existing = conn.execute('SELECT id FROM landing_pages WHERE slug = ?', (slug,)).fetchone()
+            if existing:
+                flash('URL slug already exists. Please choose a different one.', 'error')
+                conn.close()
+                return render_template('admin_add_landing_page.html')
+            
+            # Create landing page
+            cursor = conn.execute('''INSERT INTO landing_pages (title, slug, description, banner_image)
+                                    VALUES (?, ?, ?, ?)''', (title, slug, description, banner_image))
+            page_id = cursor.lastrowid
+            
+            # Add selected products
+            for i, product_id in enumerate(product_ids):
+                if product_id:
+                    conn.execute('''INSERT INTO landing_page_products (landing_page_id, product_id, display_order)
+                                   VALUES (?, ?, ?)''', (page_id, product_id, i))
+            
+            conn.commit()
+            conn.close()
+            
+            flash(f'Landing page "{title}" created successfully!', 'success')
+            return redirect(url_for('admin_landing_pages'))
+            
+        except Exception as e:
+            print(f"❌ Error creating landing page: {e}")
+            flash('Error creating landing page.', 'error')
+    
+    # Get products for selection
+    conn = get_db()
+    products = conn.execute('SELECT id, name FROM products WHERE is_visible = TRUE ORDER BY name').fetchall()
+    conn.close()
+    
+    return render_template('admin_add_landing_page.html', products=products)
+
+@app.route('/promo/<slug>')
+def landing_page(slug):
+    """Display custom landing page"""
+    try:
+        conn = get_db()
+        page = conn.execute('SELECT * FROM landing_pages WHERE slug = ? AND is_active = TRUE', (slug,)).fetchone()
+        
+        if not page:
+            flash('Page not found.', 'error')
+            return redirect(url_for('index'))
+        
+        # Get products for this landing page
+        products = conn.execute('''SELECT p.*, lpp.display_order
+                                  FROM products p
+                                  JOIN landing_page_products lpp ON p.id = lpp.product_id
+                                  WHERE lpp.landing_page_id = ? AND p.is_visible = TRUE
+                                  ORDER BY lpp.display_order''', (page['id'],)).fetchall()
+        
+        conn.close()
+        return render_template('landing_page.html', page=page, products=products)
+        
+    except Exception as e:
+        print(f"❌ Error loading landing page: {e}")
+        flash('Error loading page.', 'error')
+        return redirect(url_for('index'))
+
+@app.route('/admin/landing-pages/edit/<int:page_id>')
+@admin_required
+def admin_edit_landing_page(page_id):
+    """Edit landing page"""
+    # For now, redirect to add page - can be enhanced later
+    flash('Edit functionality coming soon. Please create a new page for now.', 'info')
+    return redirect(url_for('admin_landing_pages'))
+
+@app.route('/admin/landing-pages/delete/<int:page_id>')
+@admin_required
+def admin_delete_landing_page(page_id):
+    """Delete landing page"""
+    try:
+        conn = get_db()
+        page = conn.execute('SELECT * FROM landing_pages WHERE id = ?', (page_id,)).fetchone()
+        
+        if not page:
+            flash('Landing page not found.', 'error')
+            return redirect(url_for('admin_landing_pages'))
+        
+        # Delete banner image if exists
+        if page['banner_image']:
+            try:
+                os.remove(os.path.join(app.config['UPLOAD_FOLDER'], page['banner_image']))
+            except:
+                pass
+        
+        # Delete landing page (cascade will handle products)
+        conn.execute('DELETE FROM landing_pages WHERE id = ?', (page_id,))
+        conn.commit()
+        conn.close()
+        
+        flash(f'Landing page "{page["title"]}" deleted successfully.', 'success')
+        
+    except Exception as e:
+        print(f"❌ Error deleting landing page: {e}")
+        flash('Error deleting landing page.', 'error')
+    
+    return redirect(url_for('admin_landing_pages'))
 
 @app.route('/admin/products')
 @admin_required
