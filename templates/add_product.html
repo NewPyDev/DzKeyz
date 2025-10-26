@@ -43,8 +43,14 @@
                             </div>
                             <div class="col-12">
                                 <label for="description" class="form-label">Description</label>
-                                <textarea class="form-control" id="description" name="description" rows="3" placeholder="Describe your product (optional)"></textarea>
-                                <div class="form-text">Help customers understand what they're buying</div>
+                                <div class="position-relative">
+                                    <textarea class="form-control" id="description" name="description" rows="4" placeholder="Describe your product (optional)"></textarea>
+                                    <button type="button" class="btn btn-outline-primary btn-sm position-absolute top-0 end-0 m-2" 
+                                            id="generateDescriptionBtn" onclick="generateDescription()">
+                                        <i class="bi bi-magic me-1"></i>✨ Generate with AI
+                                    </button>
+                                </div>
+                                <div class="form-text">Help customers understand what they're buying. Use AI to generate professional descriptions!</div>
                             </div>
                         </div>
                     </div>
@@ -492,5 +498,84 @@ document.addEventListener('DOMContentLoaded', function() {
         submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Creating Product...';
     });
 });
+
+// AI Description Generator
+async function generateDescription() {
+    const nameField = document.getElementById('name');
+    const categoryField = document.getElementById('category_id');
+    const descriptionField = document.getElementById('description');
+    const generateBtn = document.getElementById('generateDescriptionBtn');
+    
+    const productName = nameField.value.trim();
+    if (!productName) {
+        alert('Please enter a product name first.');
+        nameField.focus();
+        return;
+    }
+    
+    // Get category name
+    let categoryName = '';
+    if (categoryField.value) {
+        const selectedOption = categoryField.options[categoryField.selectedIndex];
+        categoryName = selectedOption.textContent.trim();
+    }
+    
+    // Get tags (if available)
+    const tagsField = document.querySelector('input[name="tags"]');
+    const tags = tagsField ? tagsField.value : '';
+    
+    // Show loading state
+    generateBtn.disabled = true;
+    generateBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Generating...';
+    
+    try {
+        const response = await fetch('/api/generate-description', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                name: productName,
+                category: categoryName,
+                tags: tags
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.description) {
+            descriptionField.value = data.description;
+            
+            // Show success notification
+            showNotification('✨ AI description generated successfully!', 'success');
+        } else {
+            throw new Error(data.error || 'Failed to generate description');
+        }
+        
+    } catch (error) {
+        console.error('Error generating description:', error);
+        showNotification('❌ Failed to generate description. Please try again.', 'error');
+    } finally {
+        // Reset button state
+        generateBtn.disabled = false;
+        generateBtn.innerHTML = '<i class="bi bi-magic me-1"></i>✨ Generate with AI';
+    }
+}
+
+// Notification helper
+function showNotification(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `toast align-items-center text-white bg-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'info'} border-0 position-fixed top-0 end-0 m-3`;
+    toast.style.zIndex = '9999';
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">${message}</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" onclick="this.parentElement.parentElement.remove()"></button>
+        </div>
+    `;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => toast.remove(), 5000);
+}
 </script>
 {% endblock %}

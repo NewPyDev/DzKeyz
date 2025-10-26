@@ -2559,6 +2559,98 @@ def branding_css():
     response = app.response_class(css, mimetype='text/css')
     return response
 
+@app.route('/api/generate-description', methods=['POST'])
+@admin_required
+def generate_product_description():
+    """Generate AI product description using OpenAI"""
+    try:
+        data = request.get_json()
+        product_name = data.get('name', '').strip()
+        category = data.get('category', '').strip()
+        tags = data.get('tags', '').strip()
+        
+        if not product_name:
+            return jsonify({'error': 'Product name is required'}), 400
+        
+        # Check if OpenAI API key is available
+        openai_key = os.getenv('OPENAI_API_KEY')
+        if not openai_key:
+            # Fallback to a simple template-based description
+            description = generate_fallback_description(product_name, category, tags)
+            return jsonify({'description': description})
+        
+        # Prepare the prompt
+        prompt = f"""Write a professional, engaging product description for an e-commerce digital store.
+
+Product Name: {product_name}
+Category: {category if category else 'Digital Product'}
+Tags: {tags if tags else 'N/A'}
+
+Requirements:
+- Write 2-3 paragraphs (100-150 words)
+- Professional and persuasive tone
+- Highlight key benefits and features
+- Include a call-to-action
+- Focus on value proposition
+- Make it suitable for a digital products store
+
+Description:"""
+
+        # Make API call to OpenAI
+        headers = {
+            'Authorization': f'Bearer {openai_key}',
+            'Content-Type': 'application/json'
+        }
+        
+        payload = {
+            'model': 'gpt-3.5-turbo',
+            'messages': [
+                {'role': 'system', 'content': 'You are a professional copywriter specializing in e-commerce product descriptions.'},
+                {'role': 'user', 'content': prompt}
+            ],
+            'max_tokens': 200,
+            'temperature': 0.7
+        }
+        
+        response = requests.post('https://api.openai.com/v1/chat/completions', 
+                               headers=headers, json=payload, timeout=30)
+        
+        if response.status_code == 200:
+            result = response.json()
+            description = result['choices'][0]['message']['content'].strip()
+            return jsonify({'description': description})
+        else:
+            print(f"OpenAI API error: {response.status_code} - {response.text}")
+            # Fallback to template-based description
+            description = generate_fallback_description(product_name, category, tags)
+            return jsonify({'description': description})
+            
+    except Exception as e:
+        print(f"❌ Error generating description: {e}")
+        # Fallback to template-based description
+        try:
+            description = generate_fallback_description(
+                data.get('name', 'Product'), 
+                data.get('category', ''), 
+                data.get('tags', '')
+            )
+            return jsonify({'description': description})
+        except:
+            return jsonify({'error': 'Failed to generate description'}), 500
+
+def generate_fallback_description(name, category, tags):
+    """Generate a template-based description when AI is not available"""
+    templates = [
+        f"Discover the power of {name} - a premium digital solution designed to enhance your experience. This high-quality {category.lower() if category else 'digital product'} offers exceptional value and instant delivery. Perfect for professionals and enthusiasts alike, {name} provides everything you need to get started immediately. Get your copy today and unlock new possibilities!",
+        
+        f"Transform your workflow with {name}, the ultimate {category.lower() if category else 'digital solution'}. Featuring cutting-edge technology and user-friendly design, this product delivers outstanding results every time. Whether you're a beginner or expert, {name} adapts to your needs. Experience the difference with instant access and lifetime updates. Order now and elevate your digital experience!",
+        
+        f"Introducing {name} - your gateway to premium {category.lower() if category else 'digital content'}. Crafted with attention to detail and optimized for performance, this exceptional product stands out from the competition. Join thousands of satisfied customers who trust {name} for their digital needs. Fast delivery, reliable support, and unmatched quality guaranteed. Make it yours today!"
+    ]
+    
+    import random
+    return random.choice(templates)
+
 @app.route('/admin/products')
 @admin_required
 def admin_products():
