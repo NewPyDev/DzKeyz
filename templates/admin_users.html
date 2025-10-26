@@ -80,6 +80,7 @@
                                         <th>Email</th>
                                         <th>Status</th>
                                         <th>Role</th>
+                                        <th>Login Method</th>
                                         <th>Date Joined</th>
                                         <th class="text-center">Actions</th>
                                     </tr>
@@ -122,6 +123,22 @@
                                                 {% else %}
                                                     <span class="badge bg-secondary">
                                                         <i class="bi bi-person me-1"></i>User
+                                                    </span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% set login_method = user.login_method or 'email' %}
+                                                {% if login_method == 'google' %}
+                                                    <span class="badge bg-danger">
+                                                        <i class="bi bi-google me-1"></i>Google
+                                                    </span>
+                                                {% elif login_method == 'discord' %}
+                                                    <span class="badge bg-primary">
+                                                        <i class="bi bi-discord me-1"></i>Discord
+                                                    </span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">
+                                                        <i class="bi bi-envelope me-1"></i>Email
                                                     </span>
                                                 {% endif %}
                                             </td>

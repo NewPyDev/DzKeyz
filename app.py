@@ -473,6 +473,25 @@ def init_db():
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )''')
     
+    # Social login providers
+    c.execute('''CREATE TABLE IF NOT EXISTS user_social_accounts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        provider TEXT NOT NULL,
+        provider_id TEXT NOT NULL,
+        provider_email TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+        UNIQUE(provider, provider_id)
+    )''')
+    
+    # Add login_method column to users table if it doesn't exist
+    try:
+        c.execute('ALTER TABLE users ADD COLUMN login_method TEXT DEFAULT "email"')
+    except sqlite3.OperationalError:
+        # Column already exists
+        pass
+    
     # Create default admin if not exists
     c.execute('SELECT COUNT(*) FROM admin')
     if c.fetchone()[0] == 0:
@@ -2217,13 +2236,13 @@ def admin_users():
         search = request.args.get('search', '').strip()
         
         if search:
-            users = conn.execute('''SELECT id, name, email, is_active, is_admin, created_at 
+            users = conn.execute('''SELECT id, name, email, is_active, is_admin, login_method, created_at 
                                    FROM users 
                                    WHERE LOWER(name) LIKE LOWER(?) OR LOWER(email) LIKE LOWER(?)
                                    ORDER BY created_at DESC''', 
                                 (f'%{search}%', f'%{search}%')).fetchall()
         else:
-            users = conn.execute('''SELECT id, name, email, is_active, is_admin, created_at 
+            users = conn.execute('''SELECT id, name, email, is_active, is_admin, login_method, created_at 
                                    FROM users 
                                    ORDER BY created_at DESC''').fetchall()
         
@@ -2650,6 +2669,235 @@ def generate_fallback_description(name, category, tags):
     
     import random
     return random.choice(templates)
+
+@app.route('/auth/google')
+def google_login():
+    """Initiate Google OAuth login"""
+    google_client_id = os.getenv('GOOGLE_CLIENT_ID')
+    if not google_client_id:
+        flash('Google login is not configured.', 'error')
+        return redirect(url_for('login'))
+    
+    # Generate state for security
+    state = str(uuid.uuid4())
+    session['oauth_state'] = state
+    
+    # Google OAuth URL
+    google_auth_url = (
+        f"https://accounts.google.com/o/oauth2/auth?"
+        f"client_id={google_client_id}&"
+        f"redirect_uri={url_for('google_callback', _external=True)}&"
+        f"scope=openid email profile&"
+        f"response_type=code&"
+        f"state={state}"
+    )
+    
+    return redirect(google_auth_url)
+
+@app.route('/auth/google/callback')
+def google_callback():
+    """Handle Google OAuth callback"""
+    try:
+        # Verify state
+        if request.args.get('state') != session.get('oauth_state'):
+            flash('Invalid OAuth state.', 'error')
+            return redirect(url_for('login'))
+        
+        code = request.args.get('code')
+        if not code:
+            flash('Google login failed.', 'error')
+            return redirect(url_for('login'))
+        
+        # Exchange code for token
+        google_client_id = os.getenv('GOOGLE_CLIENT_ID')
+        google_client_secret = os.getenv('GOOGLE_CLIENT_SECRET')
+        
+        token_data = {
+            'client_id': google_client_id,
+            'client_secret': google_client_secret,
+            'code': code,
+            'grant_type': 'authorization_code',
+            'redirect_uri': url_for('google_callback', _external=True)
+        }
+        
+        token_response = requests.post('https://oauth2.googleapis.com/token', data=token_data)
+        token_json = token_response.json()
+        
+        if 'access_token' not in token_json:
+            flash('Failed to get Google access token.', 'error')
+            return redirect(url_for('login'))
+        
+        # Get user info
+        user_response = requests.get(
+            f"https://www.googleapis.com/oauth2/v2/userinfo?access_token={token_json['access_token']}"
+        )
+        user_data = user_response.json()
+        
+        if 'email' not in user_data:
+            flash('Failed to get user information from Google.', 'error')
+            return redirect(url_for('login'))
+        
+        # Process social login
+        return process_social_login('google', user_data['id'], user_data['email'], user_data.get('name', ''))
+        
+    except Exception as e:
+        print(f"❌ Google OAuth error: {e}")
+        flash('Google login failed. Please try again.', 'error')
+        return redirect(url_for('login'))
+
+@app.route('/auth/discord')
+def discord_login():
+    """Initiate Discord OAuth login"""
+    discord_client_id = os.getenv('DISCORD_CLIENT_ID')
+    if not discord_client_id:
+        flash('Discord login is not configured.', 'error')
+        return redirect(url_for('login'))
+    
+    # Generate state for security
+    state = str(uuid.uuid4())
+    session['oauth_state'] = state
+    
+    # Discord OAuth URL
+    discord_auth_url = (
+        f"https://discord.com/api/oauth2/authorize?"
+        f"client_id={discord_client_id}&"
+        f"redirect_uri={url_for('discord_callback', _external=True)}&"
+        f"response_type=code&"
+        f"scope=identify email&"
+        f"state={state}"
+    )
+    
+    return redirect(discord_auth_url)
+
+@app.route('/auth/discord/callback')
+def discord_callback():
+    """Handle Discord OAuth callback"""
+    try:
+        # Verify state
+        if request.args.get('state') != session.get('oauth_state'):
+            flash('Invalid OAuth state.', 'error')
+            return redirect(url_for('login'))
+        
+        code = request.args.get('code')
+        if not code:
+            flash('Discord login failed.', 'error')
+            return redirect(url_for('login'))
+        
+        # Exchange code for token
+        discord_client_id = os.getenv('DISCORD_CLIENT_ID')
+        discord_client_secret = os.getenv('DISCORD_CLIENT_SECRET')
+        
+        token_data = {
+            'client_id': discord_client_id,
+            'client_secret': discord_client_secret,
+            'grant_type': 'authorization_code',
+            'code': code,
+            'redirect_uri': url_for('discord_callback', _external=True)
+        }
+        
+        headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+        token_response = requests.post('https://discord.com/api/oauth2/token', data=token_data, headers=headers)
+        token_json = token_response.json()
+        
+        if 'access_token' not in token_json:
+            flash('Failed to get Discord access token.', 'error')
+            return redirect(url_for('login'))
+        
+        # Get user info
+        headers = {'Authorization': f"Bearer {token_json['access_token']}"}
+        user_response = requests.get('https://discord.com/api/users/@me', headers=headers)
+        user_data = user_response.json()
+        
+        if 'email' not in user_data:
+            flash('Failed to get user information from Discord.', 'error')
+            return redirect(url_for('login'))
+        
+        # Process social login
+        return process_social_login('discord', user_data['id'], user_data['email'], user_data.get('username', ''))
+        
+    except Exception as e:
+        print(f"❌ Discord OAuth error: {e}")
+        flash('Discord login failed. Please try again.', 'error')
+        return redirect(url_for('login'))
+
+def process_social_login(provider, provider_id, email, name):
+    """Process social login for both Google and Discord"""
+    try:
+        conn = get_db()
+        
+        # Check if social account exists
+        social_account = conn.execute(
+            'SELECT * FROM user_social_accounts WHERE provider = ? AND provider_id = ?',
+            (provider, provider_id)
+        ).fetchone()
+        
+        if social_account:
+            # Existing social account - log in
+            user = conn.execute('SELECT * FROM users WHERE id = ?', (social_account['user_id'],)).fetchone()
+            if user:
+                # Set session
+                session['user_id'] = user['id']
+                session['user_name'] = user['name']
+                session['user_email'] = user['email']
+                session['is_admin'] = user.get('is_admin', False)
+                
+                flash(f'Welcome back, {user["name"]}!', 'success')
+                conn.close()
+                return redirect(url_for('index'))
+        
+        # Check if user exists with this email
+        existing_user = conn.execute('SELECT * FROM users WHERE email = ?', (email.lower(),)).fetchone()
+        
+        if existing_user:
+            # Link social account to existing user
+            conn.execute(
+                'INSERT INTO user_social_accounts (user_id, provider, provider_id, provider_email) VALUES (?, ?, ?, ?)',
+                (existing_user['id'], provider, provider_id, email)
+            )
+            conn.commit()
+            
+            # Set session
+            session['user_id'] = existing_user['id']
+            session['user_name'] = existing_user['name']
+            session['user_email'] = existing_user['email']
+            session['is_admin'] = existing_user.get('is_admin', False)
+            
+            flash(f'Welcome back, {existing_user["name"]}! Your {provider.title()} account has been linked.', 'success')
+            conn.close()
+            return redirect(url_for('index'))
+        
+        # Create new user
+        password_hash = generate_password_hash(str(uuid.uuid4()))  # Random password for social users
+        
+        cursor = conn.execute(
+            '''INSERT INTO users (name, email, password_hash, is_active, is_admin, login_method)
+               VALUES (?, ?, ?, ?, ?, ?)''',
+            (name, email.lower(), password_hash, True, False, provider)  # Social users are auto-activated
+        )
+        user_id = cursor.lastrowid
+        
+        # Create social account link
+        conn.execute(
+            'INSERT INTO user_social_accounts (user_id, provider, provider_id, provider_email) VALUES (?, ?, ?, ?)',
+            (user_id, provider, provider_id, email)
+        )
+        
+        conn.commit()
+        conn.close()
+        
+        # Set session
+        session['user_id'] = user_id
+        session['user_name'] = name
+        session['user_email'] = email.lower()
+        session['is_admin'] = False
+        
+        flash(f'Welcome to DZKeyz, {name}! Your account has been created using {provider.title()}.', 'success')
+        return redirect(url_for('index'))
+        
+    except Exception as e:
+        print(f"❌ Social login processing error: {e}")
+        flash('Login failed. Please try again.', 'error')
+        return redirect(url_for('login'))
 
 @app.route('/admin/products')
 @admin_required
