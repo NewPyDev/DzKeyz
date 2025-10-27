@@ -2663,6 +2663,227 @@ def branding_css():
     .bg-secondary {{
         background-color: {secondary_color} !important;
     }}
+    
+    /* Admin Users Page Specific Styling */
+    .table {{
+        background-color: {background_color};
+        border-color: {secondary_color}30;
+    }}
+    
+    .table th {{
+        background-color: {primary_color}10 !important;
+        border-color: {secondary_color}30;
+        color: {secondary_color};
+    }}
+    
+    .table td {{
+        border-color: {secondary_color}20;
+    }}
+    
+    .badge {{
+        font-weight: 500;
+    }}
+    
+    .badge.bg-success {{
+        background-color: #28a745 !important;
+    }}
+    
+    .badge.bg-danger {{
+        background-color: #dc3545 !important;
+    }}
+    
+    .badge.bg-warning {{
+        background-color: #ffc107 !important;
+        color: #000 !important;
+    }}
+    
+    .badge.bg-info {{
+        background-color: #17a2b8 !important;
+    }}
+    
+    .badge.bg-primary {{
+        background-color: {primary_color} !important;
+    }}
+    
+    .badge.bg-secondary {{
+        background-color: {secondary_color} !important;
+    }}
+    
+    /* Statistics Cards */
+    .card.bg-success {{
+        background-color: #28a74520 !important;
+        border-color: #28a745 !important;
+    }}
+    
+    .card.bg-danger {{
+        background-color: #dc354520 !important;
+        border-color: #dc3545 !important;
+    }}
+    
+    .card.bg-primary {{
+        background-color: {primary_color}20 !important;
+        border-color: {primary_color} !important;
+    }}
+    
+    .text-success {{
+        color: #28a745 !important;
+    }}
+    
+    .text-danger {{
+        color: #dc3545 !important;
+    }}
+    
+    .text-warning {{
+        color: #ffc107 !important;
+    }}
+    
+    .text-info {{
+        color: #17a2b8 !important;
+    }}
+    
+    /* Button Groups */
+    .btn-group .btn {{
+        border-color: {secondary_color}30;
+    }}
+    
+    .btn-outline-warning {{
+        color: #ffc107;
+        border-color: #ffc107;
+    }}
+    
+    .btn-outline-warning:hover {{
+        background-color: #ffc107;
+        border-color: #ffc107;
+        color: #000;
+    }}
+    
+    .btn-outline-success {{
+        color: #28a745;
+        border-color: #28a745;
+    }}
+    
+    .btn-outline-success:hover {{
+        background-color: #28a745;
+        border-color: #28a745;
+    }}
+    
+    .btn-outline-danger {{
+        color: #dc3545;
+        border-color: #dc3545;
+    }}
+    
+    .btn-outline-danger:hover {{
+        background-color: #dc3545;
+        border-color: #dc3545;
+    }}
+    
+    /* Search and Form Elements */
+    .form-control {{
+        border-color: {secondary_color}30;
+        background-color: {background_color};
+    }}
+    
+    .form-control:focus {{
+        border-color: {primary_color};
+        box-shadow: 0 0 0 0.2rem {primary_color}25;
+    }}
+    
+    .input-group-text {{
+        background-color: {primary_color}10;
+        border-color: {secondary_color}30;
+        color: {secondary_color};
+    }}
+    
+    /* Alert Styling */
+    .alert {{
+        border-radius: 0.5rem;
+    }}
+    
+    .alert-success {{
+        background-color: #28a74515;
+        border-color: #28a745;
+        color: #155724;
+    }}
+    
+    .alert-danger {{
+        background-color: #dc354515;
+        border-color: #dc3545;
+        color: #721c24;
+    }}
+    
+    .alert-info {{
+        background-color: #17a2b815;
+        border-color: #17a2b8;
+        color: #0c5460;
+    }}
+    
+    /* Page Header */
+    .page-header {{
+        background-color: {background_color};
+        border-bottom: 1px solid {secondary_color}20;
+    }}
+    
+    /* Empty State */
+    .text-muted {{
+        color: {secondary_color}80 !important;
+    }}
+    
+    /* Hover Effects */
+    .table tbody tr:hover {{
+        background-color: {primary_color}05;
+    }}
+    
+    .card:hover {{
+        box-shadow: 0 4px 8px {primary_color}20;
+    }}
+    
+    /* Admin Page Specific Overrides */
+    .admin-sidebar .admin-nav-link {{
+        color: {secondary_color} !important;
+        transition: all 0.2s ease;
+    }}
+    
+    .admin-sidebar .admin-nav-link:hover {{
+        color: {primary_color} !important;
+        background-color: {primary_color}10 !important;
+    }}
+    
+    .admin-sidebar .admin-nav-link.active {{
+        color: {primary_color} !important;
+        background-color: {primary_color}15 !important;
+        border-right: 3px solid {primary_color};
+    }}
+    
+    /* Main Content Area */
+    .main-content {{
+        background-color: {background_color};
+    }}
+    
+    /* Header Styling */
+    header {{
+        background-color: {background_color} !important;
+        border-bottom-color: {secondary_color}20 !important;
+    }}
+    
+    /* Breadcrumb and Navigation */
+    .breadcrumb {{
+        background-color: transparent;
+    }}
+    
+    .breadcrumb-item a {{
+        color: {primary_color};
+    }}
+    
+    /* Custom Admin Styling */
+    .admin-card {{
+        background-color: {background_color};
+        border: 1px solid {secondary_color}20;
+    }}
+    
+    .admin-card:hover {{
+        border-color: {primary_color}40;
+        box-shadow: 0 2px 8px {primary_color}15;
+    }}
     """
     
     response = app.response_class(css, mimetype='text/css')
