@@ -2146,6 +2146,28 @@ def debug_activate_user(user_id):
         import traceback
         return f"<h2>❌ Error: {e}</h2><pre>{traceback.format_exc()}</pre>"
 
+@app.route('/debug/env-check')
+def debug_env_check():
+    """Debug route to check environment variables"""
+    env_vars = {
+        'GOOGLE_CLIENT_ID': os.getenv('GOOGLE_CLIENT_ID'),
+        'GOOGLE_CLIENT_SECRET': os.getenv('GOOGLE_CLIENT_SECRET'),
+        'DISCORD_CLIENT_ID': os.getenv('DISCORD_CLIENT_ID'),
+        'DISCORD_CLIENT_SECRET': os.getenv('DISCORD_CLIENT_SECRET'),
+        'RESEND_API_KEY': os.getenv('RESEND_API_KEY'),
+        'BASE_URL': os.getenv('BASE_URL'),
+    }
+    
+    result = "<h2>🔧 Environment Variables Check</h2>"
+    for key, value in env_vars.items():
+        if value:
+            masked_value = value[:10] + '...' + value[-4:] if len(value) > 14 else value
+            result += f"<p>✅ <strong>{key}:</strong> {masked_value}</p>"
+        else:
+            result += f"<p>❌ <strong>{key}:</strong> Not set</p>"
+    
+    return result
+
 @app.route('/debug/force-restart')
 def debug_force_restart():
     """Force server restart by causing a controlled error"""
@@ -2742,6 +2764,7 @@ def generate_fallback_description(name, category, tags):
 def google_login():
     """Initiate Google OAuth login"""
     google_client_id = os.getenv('GOOGLE_CLIENT_ID')
+    print(f"🔧 DEBUG: Google Client ID: {google_client_id[:20] if google_client_id else 'None'}...")
     if not google_client_id:
         flash('Google login is not configured.', 'error')
         return redirect(url_for('login'))
@@ -2817,6 +2840,7 @@ def google_callback():
 def discord_login():
     """Initiate Discord OAuth login"""
     discord_client_id = os.getenv('DISCORD_CLIENT_ID')
+    print(f"🔧 DEBUG: Discord Client ID: {discord_client_id[:20] if discord_client_id else 'None'}...")
     if not discord_client_id:
         flash('Discord login is not configured.', 'error')
         return redirect(url_for('login'))
