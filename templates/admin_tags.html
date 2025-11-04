@@ -20,16 +20,16 @@
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label for="name" class="form-label">Tag Name</label>
-                                <input type="text" class="form-control" id="name" name="name" 
-                                       placeholder="e.g., Popular, New, Premium, Sale" required>
+                                <input type="text" class="form-control" id="name" name="name"
+                                    placeholder="e.g., Popular, New, Premium, Sale" required>
                             </div>
                             <div class="col-md-6">
                                 <label for="color" class="form-label">Tag Color</label>
                                 <div class="input-group">
-                                    <input type="color" class="form-control form-control-color" 
-                                           id="color" name="color" value="#007bff" title="Choose tag color">
-                                    <input type="text" class="form-control" id="colorText" 
-                                           placeholder="#007bff" readonly>
+                                    <input type="color" class="form-control form-control-color" id="color" name="color"
+                                        value="#007bff" title="Choose tag color">
+                                    <input type="text" class="form-control" id="colorText" placeholder="#007bff"
+                                        readonly>
                                 </div>
                             </div>
                             <div class="col-12">
@@ -82,8 +82,9 @@
                             </td>
                             <td>
                                 <div class="d-flex align-items-center">
-                                    <div class="color-swatch me-2" 
-                                         style="width: 20px; height: 20px; background-color: {{ tag.color }}; border-radius: 3px; border: 1px solid #dee2e6;"></div>
+                                    <div class="color-swatch me-2"
+                                        style="width: 20px; height: 20px; background-color: {{ tag.color }}; border-radius: 3px; border: 1px solid #dee2e6;">
+                                    </div>
                                     <code>{{ tag.color }}</code>
                                 </div>
                             </td>
@@ -97,14 +98,12 @@
                             </td>
                             <td>
                                 <div class="btn-group btn-group-sm">
-                                    <button class="btn btn-outline-primary btn-sm" 
-                                            onclick="editTag({{ tag.id }})"
-                                            title="Edit Tag">
+                                    <button class="btn btn-outline-primary btn-sm" onclick="editTag({{ tag.id }})"
+                                        title="Edit Tag">
                                         <i class="bi bi-pencil"></i>
                                     </button>
-                                    <button class="btn btn-outline-danger btn-sm" 
-                                            onclick="deleteTag({{ tag.id }}, '{{ tag.name }}')"
-                                            title="Delete Tag">
+                                    <button class="btn btn-outline-danger btn-sm"
+                                        onclick="deleteTag({{ tag.id }}, '{{ tag.name }}')" title="Delete Tag">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </div>
@@ -128,24 +127,24 @@
 
 {% block extra_js %}
 <script>
-// Update color text input when color picker changes
-document.getElementById('color').addEventListener('input', function() {
-    document.getElementById('colorText').value = this.value;
-});
+    // Update color text input when color picker changes
+    document.getElementById('color').addEventListener('input', function () {
+        document.getElementById('colorText').value = this.value;
+    });
 
-// Initialize color text input
-document.getElementById('colorText').value = document.getElementById('color').value;
+    // Initialize color text input
+    document.getElementById('colorText').value = document.getElementById('color').value;
 
-function editTag(tagId) {
-    // For now, just show an alert. You can implement a modal edit form later
-    alert('Edit functionality coming soon!');
-}
-
-function deleteTag(tagId, tagName) {
-    if (confirm(`Are you sure you want to delete the tag "${tagName}"? This action cannot be undone.`)) {
-        // For now, just show an alert. You can implement delete functionality later
-        alert('Delete functionality coming soon!');
+    function editTag(tagId) {
+        // For now, just show an alert. You can implement a modal edit form later
+        alert('Edit functionality coming soon!');
     }
-}
+
+    function deleteTag(tagId, tagName) {
+        if (confirm(`Are you sure you want to delete the tag "${tagName}"? This action cannot be undone.`)) {
+            // For now, just show an alert. You can implement delete functionality later
+            alert('Delete functionality coming soon!');
+        }
+    }
 </script>
 {% endblock %}
