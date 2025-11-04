@@ -76,7 +76,7 @@
                                 </span>
                             {% endif %}
                             {% for tag in product.tags %}
-                                <span class="badge me-1" style="background-color: {{ tag.color }}; color: white;">
+                                <span class="badge me-1 text-white" style="--tag-color: {{ tag.color or '#6c757d' }}; background-color: var(--tag-color);">
                                     {{ tag.name }}
                                 </span>
                             {% endfor %}
@@ -84,7 +84,7 @@
                         
                         <!-- Description -->
                         {% if product.description %}
-                            <p class="card-text text-muted small mb-3" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                            <p class="card-text text-muted small mb-3" style="display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
                                 {{ product.description }}
                             </p>
                         {% endif %}

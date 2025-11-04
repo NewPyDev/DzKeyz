@@ -73,7 +73,7 @@
                                 <span class="badge bg-secondary">#{{ tag.id }}</span>
                             </td>
                             <td>
-                                <span class="badge" style="background-color: {{ tag.color }}; color: white;">
+                                <span class="badge text-white" style="--tag-color: {{ tag.color or '#6c757d' }}; background-color: var(--tag-color);">
                                     {{ tag.name }}
                                 </span>
                             </td>
@@ -83,7 +83,7 @@
                             <td>
                                 <div class="d-flex align-items-center">
                                     <div class="color-swatch me-2"
-                                        style="width: 20px; height: 20px; background-color: {{ tag.color }}; border-radius: 3px; border: 1px solid #dee2e6;">
+                                        style="--swatch-color: {{ tag.color or '#6c757d' }}; width: 20px; height: 20px; background-color: var(--swatch-color); border-radius: 3px; border: 1px solid #dee2e6;">
                                     </div>
                                     <code>{{ tag.color }}</code>
                                 </div>
@@ -98,12 +98,12 @@
                             </td>
                             <td>
                                 <div class="btn-group btn-group-sm">
-                                    <button class="btn btn-outline-primary btn-sm" onclick="editTag({{ tag.id }})"
-                                        title="Edit Tag">
+                                    <button class="btn btn-outline-primary btn-sm edit-tag-btn" 
+                                        data-tag-id="{{ tag.id }}" title="Edit Tag">
                                         <i class="bi bi-pencil"></i>
                                     </button>
-                                    <button class="btn btn-outline-danger btn-sm"
-                                        onclick="deleteTag({{ tag.id }}, '{{ tag.name }}')" title="Delete Tag">
+                                    <button class="btn btn-outline-danger btn-sm delete-tag-btn"
+                                        data-tag-id="{{ tag.id }}" data-tag-name="{{ tag.name }}" title="Delete Tag">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </div>
@@ -134,6 +134,26 @@
 
     // Initialize color text input
     document.getElementById('colorText').value = document.getElementById('color').value;
+
+    // Add event listeners for edit and delete buttons
+    document.addEventListener('DOMContentLoaded', function() {
+        // Edit tag buttons
+        document.querySelectorAll('.edit-tag-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const tagId = this.getAttribute('data-tag-id');
+                editTag(tagId);
+            });
+        });
+
+        // Delete tag buttons
+        document.querySelectorAll('.delete-tag-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const tagId = this.getAttribute('data-tag-id');
+                const tagName = this.getAttribute('data-tag-name');
+                deleteTag(tagId, tagName);
+            });
+        });
+    });
 
     function editTag(tagId) {
         // For now, just show an alert. You can implement a modal edit form later

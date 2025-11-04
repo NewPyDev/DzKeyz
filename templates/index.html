@@ -49,7 +49,7 @@
                 <div class="carousel-item {% if loop.first %}active{% endif %}">
                     <div class="special-offer-slide position-relative">
                         <!-- Background Image -->
-                        <div class="offer-background" style="background-image: url('{{ offer.banner_url or offer.main_image or '/static/no_image.svg' }}');"></div>
+                        <div class="offer-background" style="--bg-image: url('{{ offer.banner_url or offer.main_image or '/static/no_image.svg' }}'); background-image: var(--bg-image);"></div>
                         
                         <!-- Overlay -->
                         <div class="offer-overlay"></div>
