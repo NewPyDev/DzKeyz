@@ -234,7 +234,7 @@
                                 </span>
                             {% endif %}
                             {% for tag in product.tags %}
-                                <span class="badge me-1" style="background-color: {{ tag.color }}; color: white;">
+                                <span class="badge me-1 text-white" style="--tag-color: {{ tag.color or '#6c757d' }}; background-color: var(--tag-color);">
                                     {{ tag.name }}
                                 </span>
                             {% endfor %}

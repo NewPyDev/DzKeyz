@@ -151,7 +151,7 @@
                             <td>
                                 <div class="btn-group btn-group-sm">
                                     <button class="btn btn-outline-primary btn-sm" 
-                                            onclick="viewMessage({{ message.id }})" 
+                                            onclick="viewMessage('{{ message.id }}')" 
                                             data-bs-toggle="modal" 
                                             data-bs-target="#messageModal"
                                             title="View Message">
@@ -159,7 +159,7 @@
                                     </button>
                                     {% if message.status == 'new' %}
                                     <button class="btn btn-outline-success btn-sm" 
-                                            onclick="markAsRead({{ message.id }})"
+                                            onclick="markAsRead('{{ message.id }}')"
                                             title="Mark as Read">
                                         <i class="bi bi-check"></i>
                                     </button>
