@@ -492,6 +492,31 @@ def init_db():
         # Column already exists
         pass
     
+    # Add special offers columns to products table if they don't exist
+    try:
+        c.execute('ALTER TABLE products ADD COLUMN special_offer BOOLEAN DEFAULT FALSE')
+    except sqlite3.OperationalError:
+        # Column already exists
+        pass
+    
+    try:
+        c.execute('ALTER TABLE products ADD COLUMN offer_label TEXT')
+    except sqlite3.OperationalError:
+        # Column already exists
+        pass
+    
+    try:
+        c.execute('ALTER TABLE products ADD COLUMN banner_image TEXT')
+    except sqlite3.OperationalError:
+        # Column already exists
+        pass
+    
+    try:
+        c.execute('ALTER TABLE products ADD COLUMN offer_order INTEGER DEFAULT 0')
+    except sqlite3.OperationalError:
+        # Column already exists
+        pass
+    
     # Create default admin if not exists
     c.execute('SELECT COUNT(*) FROM admin')
     if c.fetchone()[0] == 0:
@@ -1213,8 +1238,33 @@ def index():
     # Get categories for filtering
     categories = get_categories()
     
+    # Get special offers for homepage slider
+    special_offers = []
+    special_offers_raw = conn.execute('''
+        SELECT p.*, c.name as category_name, c.icon as category_icon
+        FROM products p
+        LEFT JOIN categories c ON p.category_id = c.id
+        WHERE p.special_offer = TRUE AND p.is_visible = TRUE
+        ORDER BY p.offer_order ASC, p.created_at DESC
+        LIMIT 5
+    ''').fetchall()
+    
+    for offer in special_offers_raw:
+        offer_dict = dict(offer)
+        offer_dict['image_urls'] = get_product_images(offer['images'])
+        offer_dict['main_image'] = offer_dict['image_urls'][0] if offer_dict['image_urls'] else None
+        offer_dict['tags'] = get_product_tags(offer['id'])
+        
+        # Use banner image if available, otherwise use main product image
+        if offer['banner_image']:
+            offer_dict['banner_url'] = f"/static/banners/{offer['banner_image']}"
+        else:
+            offer_dict['banner_url'] = offer_dict['main_image']
+        
+        special_offers.append(offer_dict)
+    
     conn.close()
-    return render_template('index.html', products=products, bundles=bundles, categories=categories)
+    return render_template('index.html', products=products, bundles=bundles, categories=categories, special_offers=special_offers)
 
 @app.route('/product/<int:product_id>')
 def product_details(product_id):
@@ -4793,6 +4843,127 @@ def add_bundle():
     except Exception as e:
         flash(f'Error creating bundle: {str(e)}', 'error')
         return redirect(url_for('add_bundle'))
+
+@app.route('/admin/special-offers')
+@admin_required
+def admin_special_offers():
+    """Admin special offers management page"""
+    try:
+        conn = get_db()
+        # Get all products with special offer details
+        special_offers = conn.execute('''
+            SELECT p.*, c.name as category_name, c.icon as category_icon
+            FROM products p
+            LEFT JOIN categories c ON p.category_id = c.id
+            WHERE p.special_offer = TRUE
+            ORDER BY p.offer_order ASC, p.created_at DESC
+        ''').fetchall()
+        
+        # Get all products for adding to special offers
+        all_products = conn.execute('''
+            SELECT p.*, c.name as category_name
+            FROM products p
+            LEFT JOIN categories c ON p.category_id = c.id
+            WHERE p.is_visible = TRUE
+            ORDER BY p.name ASC
+        ''').fetchall()
+        
+        conn.close()
+        return render_template('admin_special_offers.html', 
+                             special_offers=special_offers, 
+                             all_products=all_products)
+    except Exception as e:
+        flash(f'Error loading special offers: {e}', 'error')
+        return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/toggle_special_offer/<int:product_id>', methods=['POST'])
+@admin_required
+def toggle_special_offer(product_id):
+    """Toggle product special offer status"""
+    try:
+        conn = get_db()
+        current_status = conn.execute('SELECT special_offer FROM products WHERE id = ?', (product_id,)).fetchone()
+        
+        if current_status:
+            new_status = not current_status['special_offer']
+            conn.execute('UPDATE products SET special_offer = ? WHERE id = ?', (new_status, product_id))
+            conn.commit()
+            
+            status_text = "enabled" if new_status else "disabled"
+            flash(f'Special offer {status_text} successfully!', 'success')
+        else:
+            flash('Product not found!', 'error')
+        
+        conn.close()
+    except Exception as e:
+        flash(f'Error updating special offer: {e}', 'error')
+    
+    return redirect(url_for('admin_special_offers'))
+
+@app.route('/admin/update_offer_details/<int:product_id>', methods=['POST'])
+@admin_required
+def update_offer_details(product_id):
+    """Update special offer details"""
+    try:
+        offer_label = request.form.get('offer_label', '').strip()
+        offer_order = int(request.form.get('offer_order', 0))
+        
+        conn = get_db()
+        
+        # Handle banner image upload
+        banner_image = None
+        if 'banner_image' in request.files:
+            file = request.files['banner_image']
+            if file and file.filename and allowed_image_file(file.filename):
+                # Check file size
+                file.seek(0, 2)
+                file_size = file.tell()
+                file.seek(0)
+                
+                if file_size <= MAX_IMAGE_SIZE:
+                    # Generate unique filename
+                    file_extension = file.filename.rsplit('.', 1)[1].lower()
+                    unique_filename = f"banner_{uuid.uuid4().hex}.{file_extension}"
+                    file_path = os.path.join('static', 'banners', unique_filename)
+                    
+                    # Create banners directory if it doesn't exist
+                    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+                    
+                    # Delete old banner image if exists
+                    old_banner = conn.execute('SELECT banner_image FROM products WHERE id = ?', (product_id,)).fetchone()
+                    if old_banner and old_banner['banner_image']:
+                        old_path = os.path.join('static', 'banners', old_banner['banner_image'])
+                        if os.path.exists(old_path):
+                            os.remove(old_path)
+                    
+                    file.save(file_path)
+                    banner_image = unique_filename
+                else:
+                    flash('Banner image too large (max 5MB)', 'error')
+                    return redirect(url_for('admin_special_offers'))
+        
+        # Update offer details
+        if banner_image:
+            conn.execute('''
+                UPDATE products 
+                SET offer_label = ?, offer_order = ?, banner_image = ?
+                WHERE id = ?
+            ''', (offer_label, offer_order, banner_image, product_id))
+        else:
+            conn.execute('''
+                UPDATE products 
+                SET offer_label = ?, offer_order = ?
+                WHERE id = ?
+            ''', (offer_label, offer_order, product_id))
+        
+        conn.commit()
+        conn.close()
+        
+        flash('Offer details updated successfully!', 'success')
+    except Exception as e:
+        flash(f'Error updating offer details: {e}', 'error')
+    
+    return redirect(url_for('admin_special_offers'))
 
 @app.route('/admin/toggle_product_visibility/<int:product_id>', methods=['POST'])
 @admin_required

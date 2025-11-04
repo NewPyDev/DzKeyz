@@ -24,6 +24,134 @@
     </div>
 </section>
 
+<!-- Special Offers Slider -->
+{% if special_offers %}
+<section class="special-offers-section py-5">
+    <div class="container">
+        <div class="text-center mb-4">
+            <h2 class="fw-bold mb-3">
+                <i class="bi bi-fire me-2 text-danger"></i>Special Offers
+            </h2>
+            <p class="text-muted lead">Don't miss out on these exclusive deals!</p>
+        </div>
+        
+        <!-- Main Slider -->
+        <div id="specialOffersCarousel" class="carousel slide mb-4" data-bs-ride="carousel" data-bs-interval="5000">
+            <div class="carousel-indicators">
+                {% for offer in special_offers %}
+                <button type="button" data-bs-target="#specialOffersCarousel" data-bs-slide-to="{{ loop.index0 }}" 
+                        {% if loop.first %}class="active"{% endif %}></button>
+                {% endfor %}
+            </div>
+            
+            <div class="carousel-inner rounded-3 shadow">
+                {% for offer in special_offers %}
+                <div class="carousel-item {% if loop.first %}active{% endif %}">
+                    <div class="special-offer-slide position-relative">
+                        <!-- Background Image -->
+                        <div class="offer-background" style="background-image: url('{{ offer.banner_url or offer.main_image or '/static/no_image.svg' }}');"></div>
+                        
+                        <!-- Overlay -->
+                        <div class="offer-overlay"></div>
+                        
+                        <!-- Content -->
+                        <div class="offer-content">
+                            <div class="container">
+                                <div class="row align-items-center" style="min-height: 400px;">
+                                    <div class="col-lg-6">
+                                        <div class="offer-text text-white">
+                                            {% if offer.offer_label %}
+                                                <span class="badge bg-warning text-dark mb-3 fs-6">
+                                                    <i class="bi bi-star-fill me-1"></i>{{ offer.offer_label }}
+                                                </span>
+                                            {% endif %}
+                                            
+                                            <h1 class="display-4 fw-bold mb-3">{{ offer.name }}</h1>
+                                            
+                                            {% if offer.description %}
+                                                <p class="lead mb-4">{{ offer.description[:150] }}{% if offer.description|length > 150 %}...{% endif %}</p>
+                                            {% endif %}
+                                            
+                                            <div class="d-flex align-items-center mb-4">
+                                                <span class="display-5 fw-bold text-warning me-3">{{ "{:,.0f}".format(offer.price_dzd) }} DZD</span>
+                                                {% if offer.category_name %}
+                                                    <span class="badge bg-light text-dark">
+                                                        {% if offer.category_icon %}<i class="{{ offer.category_icon }} me-1"></i>{% endif %}
+                                                        {{ offer.category_name }}
+                                                    </span>
+                                                {% endif %}
+                                            </div>
+                                            
+                                            <div class="d-flex gap-3">
+                                                <a href="{{ url_for('product_details', product_id=offer.id) }}" class="btn btn-light btn-lg">
+                                                    <i class="bi bi-eye me-2"></i>View Details
+                                                </a>
+                                                {% if offer.type == 'file' or offer.stock_count > 0 %}
+                                                    <a href="{{ url_for('buy_product', product_id=offer.id) }}" class="btn btn-warning btn-lg">
+                                                        <i class="bi bi-cart-plus me-2"></i>Buy Now
+                                                    </a>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-lg-6">
+                                        <div class="offer-image text-center">
+                                            {% if offer.main_image %}
+                                                <img src="{{ offer.main_image }}" alt="{{ offer.name }}" 
+                                                     class="img-fluid rounded shadow-lg" style="max-height: 300px;">
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <button class="carousel-control-prev" type="button" data-bs-target="#specialOffersCarousel" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon"></span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#specialOffersCarousel" data-bs-slide="next">
+                <span class="carousel-control-next-icon"></span>
+            </button>
+        </div>
+        
+        <!-- Quick Access Cards -->
+        {% if special_offers|length > 1 %}
+        <div class="row g-3">
+            {% for offer in special_offers[:3] %}
+            <div class="col-lg-4 col-md-6">
+                <div class="card special-offer-card h-100 border-0 shadow-sm">
+                    <div class="position-relative">
+                        <img src="{{ offer.main_image or '/static/no_image.svg' }}" 
+                             class="card-img-top" alt="{{ offer.name }}" style="height: 150px; object-fit: cover;">
+                        {% if offer.offer_label %}
+                            <span class="position-absolute top-0 start-0 m-2 badge bg-danger">
+                                {{ offer.offer_label }}
+                            </span>
+                        {% endif %}
+                    </div>
+                    <div class="card-body">
+                        <h6 class="card-title">{{ offer.name }}</h6>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="fw-bold text-primary">{{ "{:,.0f}".format(offer.price_dzd) }} DZD</span>
+                            <a href="{{ url_for('product_details', product_id=offer.id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endif %}
+
 <!-- Trust Badges -->
 <section class="trust-badges">
     <div class="container">
@@ -524,6 +652,91 @@
 {% endblock %}
 
 {% block extra_js %}
+<style>
+/* Special Offers Styles */
+.special-offers-section {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.special-offer-slide {
+    position: relative;
+    min-height: 400px;
+    overflow: hidden;
+}
+
+.offer-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    filter: blur(2px);
+    transform: scale(1.1);
+}
+
+.offer-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.4) 100%);
+}
+
+.offer-content {
+    position: relative;
+    z-index: 2;
+}
+
+.special-offer-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.special-offer-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15) !important;
+}
+
+.carousel-control-prev,
+.carousel-control-next {
+    width: 5%;
+    background: rgba(0,0,0,0.3);
+    border-radius: 0 10px 10px 0;
+}
+
+.carousel-control-next {
+    border-radius: 10px 0 0 10px;
+}
+
+.carousel-indicators {
+    bottom: 20px;
+}
+
+.carousel-indicators button {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin: 0 5px;
+}
+
+@media (max-width: 768px) {
+    .offer-content .display-4 {
+        font-size: 2rem;
+    }
+    
+    .offer-content .display-5 {
+        font-size: 1.5rem;
+    }
+    
+    .special-offer-slide {
+        min-height: 300px;
+    }
+}
+</style>
+
 <script>
 // Add fade-in animation on scroll
 const observerOptions = {
