@@ -4565,82 +4565,44 @@ def test_upload(filename):
 @admin_required
 def admin_download_tokens():
     """View and manage download tokens"""
-    conn = get_db()
-    
-    tokens = conn.execute('''
-        SELECT dt.*, o.buyer_name, o.email, p.name as product_name
-        FROM download_tokens dt
-        JOIN orders o ON dt.order_id = o.id
-        JOIN products p ON dt.product_id = p.id
-        ORDER BY dt.created_at DESC
-        LIMIT 50
-    ''').fetchall()
-    
-    conn.close()
-    
-    return render_template_string('''
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Download Tokens - Admin</title>
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    </head>
-    <body class="bg-light">
-        <div class="container py-4">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2><i class="bi bi-download me-2"></i>Download Tokens</h2>
-                <a href="{{ url_for('admin_orders') }}" class="btn btn-outline-primary">← Back to Orders</a>
-            </div>
-            
-            {% if tokens %}
-            <div class="card">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Token</th>
-                                <th>Order</th>
-                                <th>Customer</th>
-                                <th>Product</th>
-                                <th>Downloads</th>
-                                <th>Status</th>
-                                <th>Expires</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for token in tokens %}
-                            <tr>
-                                <td><code>{{ token.token[:8] }}...</code></td>
-                                <td>#{{ token.order_id }}</td>
-                                <td>{{ token.buyer_name }}</td>
-                                <td>{{ token.product_name }}</td>
-                                <td>{{ token.download_count }}/{{ token.max_downloads }}</td>
-                                <td>
-                                    {% if token.download_count >= token.max_downloads %}
-                                        <span class="badge bg-danger">Exhausted</span>
-                                    {% else %}
-                                        <span class="badge bg-success">Active</span>
-                                    {% endif %}
-                                </td>
-                                <td>{{ token.expires_at[:16] }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            {% else %}
-            <div class="text-center py-5">
-                <i class="bi bi-download text-muted" style="font-size: 4rem;"></i>
-                <h4 class="text-muted mt-3">No Download Tokens</h4>
-                <p class="text-muted">Download tokens will appear here when file products are delivered.</p>
-            </div>
-            {% endif %}
-        </div>
-    </body>
-    </html>
-    ''', tokens=tokens)
+    try:
+        conn = get_db()
+        search_query = request.args.get('search', '').strip()
+        
+        # Base query
+        base_query = '''
+            SELECT dt.*, o.buyer_name, o.email, p.name as product_name
+            FROM download_tokens dt
+            JOIN orders o ON dt.order_id = o.id
+            JOIN products p ON dt.product_id = p.id
+        '''
+        
+        # Add search conditions if search query exists
+        if search_query:
+            tokens = conn.execute(base_query + '''
+                WHERE dt.token LIKE ? OR p.name LIKE ? OR o.email LIKE ? OR o.buyer_name LIKE ?
+                ORDER BY dt.created_at DESC
+                LIMIT 100
+            ''', (f'%{search_query}%', f'%{search_query}%', f'%{search_query}%', f'%{search_query}%')).fetchall()
+        else:
+            tokens = conn.execute(base_query + '''
+                ORDER BY dt.created_at DESC
+                LIMIT 100
+            ''').fetchall()
+        
+        # Calculate statistics
+        all_tokens = conn.execute(base_query).fetchall()
+        expired_tokens_count = 0  # You can implement expiry logic here if needed
+        
+        conn.close()
+        
+        return render_template('admin_download_tokens.html', 
+                             tokens=tokens, 
+                             search_query=search_query,
+                             expired_tokens_count=expired_tokens_count)
+    except Exception as e:
+        flash(f'Error loading download tokens: {e}', 'error')
+        return redirect(url_for('admin_dashboard'))
 
 @app.route('/admin/debug/uploads')
 @admin_required

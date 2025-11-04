@@ -1,74 +1,119 @@
-{% extends "base.html" %}
+{% extends "admin_base.html" %}
 
-{% block title %}User Management - Admin Panel{% endblock %}
+{% block page_title %}Users{% endblock %}
+{% block page_heading %}User Management{% endblock %}
+{% block page_description %}Manage user accounts and permissions{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-    <div class="row">
-        <div class="col-12">
-            <!-- Header -->
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h2 class="mb-1">
-                        <i class="bi bi-people me-2"></i>User Management
-                    </h2>
-                    <p class="text-muted mb-0">Manage user accounts and permissions</p>
-                </div>
-                <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left me-2"></i>Back to Dashboard
-                </a>
-            </div>
-
-            <!-- Flash Messages -->
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ 'danger' if category == 'error' else 'success' if category == 'success' else 'info' }} alert-dismissible fade show" role="alert">
-                            <i class="bi bi-{{ 'exclamation-triangle' if category == 'error' else 'check-circle' if category == 'success' else 'info-circle' }} me-2"></i>
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
-
-            <!-- Search Bar -->
-            <div class="card mb-4">
+<div class="container-fluid">
+    <!-- Stats Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-3 col-md-6">
+            <div class="card bg-primary text-white">
                 <div class="card-body">
-                    <form method="GET" class="row g-3">
-                        <div class="col-md-8">
-                            <div class="input-group">
-                                <span class="input-group-text">
-                                    <i class="bi bi-search"></i>
-                                </span>
-                                <input type="text" class="form-control" name="search" 
-                                       placeholder="Search by name or email..." 
-                                       value="{{ search }}">
-                            </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50">Total Users</h6>
+                            <h2 class="mb-0">{{ users|length }}</h2>
                         </div>
-                        <div class="col-md-4">
-                            <div class="d-grid gap-2 d-md-flex">
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="bi bi-search me-2"></i>Search
-                                </button>
-                                {% if search %}
-                                    <a href="{{ url_for('admin_users') }}" class="btn btn-outline-secondary">
-                                        <i class="bi bi-x-circle me-2"></i>Clear
-                                    </a>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </form>
+                        <i class="bi bi-people fs-1 opacity-50"></i>
+                    </div>
                 </div>
             </div>
-
-            <!-- Users Table -->
-            <div class="card">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0">
-                        <i class="bi bi-table me-2"></i>Users ({{ users|length }})
-                    </h5>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50">Active Users</h6>
+                            <h2 class="mb-0">{{ users|selectattr('is_active')|list|length }}</h2>
+                        </div>
+                        <i class="bi bi-person-check fs-1 opacity-50"></i>
+                    </div>
                 </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50">Inactive Users</h6>
+                            <h2 class="mb-0">{{ users|rejectattr('is_active')|list|length }}</h2>
+                        </div>
+                        <i class="bi bi-person-x fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50">Admin Users</h6>
+                            <h2 class="mb-0">{{ users|selectattr('is_admin')|list|length }}</h2>
+                        </div>
+                        <i class="bi bi-shield-check fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="GET" action="{{ url_for('admin_users') }}" class="d-flex gap-2">
+                        <div class="flex-grow-1">
+                            <input type="text" name="search" value="{{ search or '' }}" 
+                                   placeholder="Search by name or email..." 
+                                   class="form-control">
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-search me-1"></i>Search
+                        </button>
+                        {% if search %}
+                        <a href="{{ url_for('admin_users') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle me-1"></i>Clear
+                        </a>
+                        {% endif %}
+                    </form>
+                    {% if search %}
+                    <small class="text-muted mt-2 d-block">
+                        <i class="bi bi-info-circle me-1"></i>Showing results for: "{{ search }}"
+                    </small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Users Table -->
+    <div class="card">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-list-ul me-2"></i>{% if search %}Search Results{% else %}All Users{% endif %}
+                </h5>
+                <div class="btn-group" role="group">
+                    <input type="radio" class="btn-check" name="statusFilter" id="all" value="all" checked>
+                    <label class="btn btn-outline-primary btn-sm" for="all">All</label>
+
+                    <input type="radio" class="btn-check" name="statusFilter" id="active" value="active">
+                    <label class="btn btn-outline-success btn-sm" for="active">Active</label>
+
+                    <input type="radio" class="btn-check" name="statusFilter" id="inactive" value="inactive">
+                    <label class="btn btn-outline-warning btn-sm" for="inactive">Inactive</label>
+
+                    <input type="radio" class="btn-check" name="statusFilter" id="admin" value="admin">
+                    <label class="btn btn-outline-info btn-sm" for="admin">Admins</label>
+                </div>
+            </div>
+        </div>
                 <div class="card-body p-0">
                     {% if users %}
                         <div class="table-responsive">
@@ -171,53 +216,60 @@
                                 </tbody>
                             </table>
                         </div>
+            {% else %}
+            <div class="text-center py-5">
+                <div class="mb-4">
+                    <i class="bi bi-people text-muted" style="font-size: 4rem;"></i>
+                </div>
+                <h3 class="fw-semibold text-muted">No Users Found</h3>
+                <p class="text-muted">
+                    {% if search %}
+                        No users match your search criteria. Try adjusting your search terms.
                     {% else %}
-                        <div class="text-center py-5">
-                            <i class="bi bi-people text-muted" style="font-size: 3rem;"></i>
-                            <h5 class="text-muted mt-3">No Users Found</h5>
-                            <p class="text-muted">
-                                {% if search %}
-                                    No users match your search criteria.
-                                {% else %}
-                                    No users have registered yet.
-                                {% endif %}
-                            </p>
-                        </div>
+                        No users have registered yet. Users will appear here once they create accounts.
                     {% endif %}
-                </div>
+                </p>
+                {% if search %}
+                <a href="{{ url_for('admin_users') }}" class="btn btn-primary">
+                    <i class="bi bi-arrow-left me-2"></i>View All Users
+                </a>
+                {% endif %}
             </div>
-
-            <!-- Statistics Cards -->
-            <div class="row mt-4">
-                <div class="col-md-4">
-                    <div class="card bg-success bg-opacity-10 border-success">
-                        <div class="card-body text-center">
-                            <i class="bi bi-check-circle-fill text-success" style="font-size: 2rem;"></i>
-                            <h4 class="text-success mt-2">{{ users|selectattr('is_active')|list|length }}</h4>
-                            <p class="text-success mb-0">Active Users</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card bg-danger bg-opacity-10 border-danger">
-                        <div class="card-body text-center">
-                            <i class="bi bi-x-circle-fill text-danger" style="font-size: 2rem;"></i>
-                            <h4 class="text-danger mt-2">{{ users|rejectattr('is_active')|list|length }}</h4>
-                            <p class="text-danger mb-0">Inactive Users</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card bg-primary bg-opacity-10 border-primary">
-                        <div class="card-body text-center">
-                            <i class="bi bi-people-fill text-primary" style="font-size: 2rem;"></i>
-                            <h4 class="text-primary mt-2">{{ users|length }}</h4>
-                            <p class="text-primary mb-0">Total Users</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            {% endif %}
         </div>
     </div>
 </div>
+{% endblock %}
+{
+% block extra_js %}
+<script>
+// User status filtering functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const filterButtons = document.querySelectorAll('input[name="statusFilter"]');
+    const userRows = document.querySelectorAll('tbody tr');
+    
+    filterButtons.forEach(button => {
+        button.addEventListener('change', function() {
+            const filterValue = this.value;
+            
+            userRows.forEach(row => {
+                const statusBadge = row.querySelector('td:nth-child(4) .badge');
+                const roleBadge = row.querySelector('td:nth-child(5) .badge');
+                
+                let showRow = true;
+                
+                if (filterValue === 'active') {
+                    showRow = statusBadge && statusBadge.classList.contains('bg-success');
+                } else if (filterValue === 'inactive') {
+                    showRow = statusBadge && statusBadge.classList.contains('bg-danger');
+                } else if (filterValue === 'admin') {
+                    showRow = roleBadge && roleBadge.classList.contains('bg-warning');
+                }
+                
+                row.style.display = showRow ? '' : 'none';
+            });
+        });
+    });
+});
+</script>
 {% endblock %}

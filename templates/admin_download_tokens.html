@@ -1,0 +1,279 @@
+{% extends "admin_base.html" %}
+
+{% block page_title %}Download Tokens{% endblock %}
+{% block page_heading %}Download Tokens{% endblock %}
+{% block page_description %}View and manage download tokens for digital products{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Stats Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-3 col-md-6">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50">Total Tokens</h6>
+                            <h2 class="mb-0">{{ tokens|length }}</h2>
+                        </div>
+                        <i class="bi bi-download fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50">Active Tokens</h6>
+                            <h2 class="mb-0">{{ tokens|selectattr('is_active')|list|length }}</h2>
+                        </div>
+                        <i class="bi bi-check-circle fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50">Used Tokens</h6>
+                            <h2 class="mb-0">{{ tokens|selectattr('is_used')|list|length }}</h2>
+                        </div>
+                        <i class="bi bi-archive fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50">Expired Tokens</h6>
+                            <h2 class="mb-0">{{ expired_tokens_count or 0 }}</h2>
+                        </div>
+                        <i class="bi bi-clock-history fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>    <!
+-- Search Bar -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="GET" action="{{ url_for('admin_download_tokens') }}" class="d-flex gap-2">
+                        <div class="flex-grow-1">
+                            <input type="text" name="search" value="{{ search_query or '' }}" 
+                                   placeholder="Search by Token ID, Product Name, or Customer Email..." 
+                                   class="form-control">
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-search me-1"></i>Search
+                        </button>
+                        {% if search_query %}
+                        <a href="{{ url_for('admin_download_tokens') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle me-1"></i>Clear
+                        </a>
+                        {% endif %}
+                    </form>
+                    {% if search_query %}
+                    <small class="text-muted mt-2 d-block">
+                        <i class="bi bi-info-circle me-1"></i>Showing results for: "{{ search_query }}"
+                    </small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tokens Table -->
+    <div class="card">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-list-ul me-2"></i>{% if search_query %}Search Results{% else %}All Download Tokens{% endif %}
+                </h5>
+                <div class="btn-group" role="group">
+                    <input type="radio" class="btn-check" name="statusFilter" id="all" value="all" checked>
+                    <label class="btn btn-outline-primary btn-sm" for="all">All</label>
+
+                    <input type="radio" class="btn-check" name="statusFilter" id="active" value="active">
+                    <label class="btn btn-outline-success btn-sm" for="active">Active</label>
+
+                    <input type="radio" class="btn-check" name="statusFilter" id="used" value="used">
+                    <label class="btn btn-outline-warning btn-sm" for="used">Used</label>
+
+                    <input type="radio" class="btn-check" name="statusFilter" id="expired" value="expired">
+                    <label class="btn btn-outline-danger btn-sm" for="expired">Expired</label>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            {% if tokens %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Token ID</th>
+                            <th>Order</th>
+                            <th>Customer</th>
+                            <th>Product</th>
+                            <th>Downloads</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Expires</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody> 
+                       {% for token in tokens %}
+                        <tr>
+                            <td>
+                                <code class="text-primary">{{ token.token[:8] }}...</code>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">#{{ token.order_id }}</span>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
+                                        <i class="bi bi-person text-primary"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-semibold">{{ token.buyer_name }}</div>
+                                        <small class="text-muted">{{ token.email }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="fw-semibold">{{ token.product_name }}</div>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="progress me-2" style="width: 60px; height: 8px;">
+                                        <div class="progress-bar" role="progressbar" 
+                                             style="--progress-width: {{ (token.download_count / token.max_downloads * 100) if token.max_downloads > 0 else 0 }}%; width: var(--progress-width);"></div>
+                                    </div>
+                                    <small class="text-muted">{{ token.download_count }}/{{ token.max_downloads }}</small>
+                                </div>
+                            </td>
+                            <td>
+                                {% if token.download_count >= token.max_downloads %}
+                                    <span class="badge bg-warning">
+                                        <i class="bi bi-archive me-1"></i>Used
+                                    </span>
+                                {% elif token.expires_at and token.expires_at < now() %}
+                                    <span class="badge bg-danger">
+                                        <i class="bi bi-clock-history me-1"></i>Expired
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-check-circle me-1"></i>Active
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small class="text-muted">
+                                    {{ token.created_at[:16] if token.created_at else 'N/A' }}
+                                </small>
+                            </td>
+                            <td>
+                                <small class="text-muted">
+                                    {% if token.expires_at %}
+                                        {{ token.expires_at[:16] }}
+                                    {% else %}
+                                        Never
+                                    {% endif %}
+                                </small>
+                            </td>
+                            <td class="text-center">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <button class="btn btn-outline-primary" title="View Details" 
+                                            data-bs-toggle="modal" data-bs-target="#tokenModal{{ token.id }}">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                    {% if token.download_count < token.max_downloads %}
+                                    <button class="btn btn-outline-danger" title="Revoke Token"
+                                            onclick="revokeToken('{{ token.token }}')">
+                                        <i class="bi bi-x-circle"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div> 
+           {% else %}
+            <div class="text-center py-5">
+                <div class="mb-4">
+                    <i class="bi bi-download text-muted" style="font-size: 4rem;"></i>
+                </div>
+                <h3 class="fw-semibold text-muted">No Download Tokens Yet</h3>
+                <p class="text-muted">
+                    {% if search_query %}
+                        No tokens match your search criteria. Try adjusting your search terms.
+                    {% else %}
+                        Download tokens will appear here when customers purchase digital products.
+                    {% endif %}
+                </p>
+                {% if search_query %}
+                <a href="{{ url_for('admin_download_tokens') }}" class="btn btn-primary">
+                    <i class="bi bi-arrow-left me-2"></i>View All Tokens
+                </a>
+                {% else %}
+                <a href="{{ url_for('admin_orders') }}" class="btn btn-primary">
+                    <i class="bi bi-receipt me-2"></i>View Orders
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+// Token status filtering functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const filterButtons = document.querySelectorAll('input[name="statusFilter"]');
+    const tokenRows = document.querySelectorAll('tbody tr');
+    
+    filterButtons.forEach(button => {
+        button.addEventListener('change', function() {
+            const filterValue = this.value;
+            
+            tokenRows.forEach(row => {
+                const statusBadge = row.querySelector('td:nth-child(6) .badge');
+                
+                let showRow = true;
+                
+                if (filterValue === 'active') {
+                    showRow = statusBadge && statusBadge.classList.contains('bg-success');
+                } else if (filterValue === 'used') {
+                    showRow = statusBadge && statusBadge.classList.contains('bg-warning');
+                } else if (filterValue === 'expired') {
+                    showRow = statusBadge && statusBadge.classList.contains('bg-danger');
+                }
+                
+                row.style.display = showRow ? '' : 'none';
+            });
+        });
+    });
+});
+
+function revokeToken(token) {
+    if (confirm('Are you sure you want to revoke this download token? This action cannot be undone.')) {
+        // Implementation for revoking token
+        alert('Token revocation functionality coming soon!');
+    }
+}
+</script>
+{% endblock %}
+{% endblock %}
