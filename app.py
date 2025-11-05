@@ -1206,7 +1206,7 @@ def index():
         product_dict['tags'] = get_product_tags(product['id'])
         
         # Check stock status for key products
-        if product['type'] == 'key' and product.get('stock_limit'):
+        if product['type'] == 'key' and product['stock_limit']:
             available_keys = conn.execute(
                 'SELECT COUNT(*) FROM product_keys WHERE product_id = ? AND is_used = FALSE',
                 (product['id'],)
