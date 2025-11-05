@@ -9,53 +9,53 @@
     <!-- Stats Cards -->
     <div class="row g-4 mb-4">
         <div class="col-lg-3 col-md-6">
-            <div class="card bg-primary text-white">
+            <div class="card stats-card-primary text-white">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-title text-white-50">Total Tokens</h6>
+                            <h6 class="card-title">Total Tokens</h6>
                             <h2 class="mb-0">{{ tokens|length }}</h2>
                         </div>
-                        <i class="bi bi-download fs-1 opacity-50"></i>
+                        <i class="bi bi-download fs-1"></i>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
-            <div class="card bg-success text-white">
+            <div class="card stats-card-success text-white">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-title text-white-50">Active Tokens</h6>
+                            <h6 class="card-title">Active Tokens</h6>
                             <h2 class="mb-0">{{ tokens|selectattr('is_used', 'equalto', 0)|list|length }}</h2>
                         </div>
-                        <i class="bi bi-check-circle fs-1 opacity-50"></i>
+                        <i class="bi bi-check-circle fs-1"></i>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
-            <div class="card bg-warning text-white">
+            <div class="card stats-card-warning text-white">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-title text-white-50">Used Tokens</h6>
+                            <h6 class="card-title">Used Tokens</h6>
                             <h2 class="mb-0">{{ tokens|selectattr('is_used', 'equalto', 1)|list|length }}</h2>
                         </div>
-                        <i class="bi bi-archive fs-1 opacity-50"></i>
+                        <i class="bi bi-archive fs-1"></i>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
-            <div class="card bg-danger text-white">
+            <div class="card stats-card-danger text-white">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-title text-white-50">Expired Tokens</h6>
+                            <h6 class="card-title">Expired Tokens</h6>
                             <h2 class="mb-0">{{ expired_tokens_count or 0 }}</h2>
                         </div>
-                        <i class="bi bi-clock-history fs-1 opacity-50"></i>
+                        <i class="bi bi-clock-history fs-1"></i>
                     </div>
                 </div>
             </div>

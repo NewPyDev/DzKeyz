@@ -9,53 +9,53 @@
     <!-- Stats Cards -->
     <div class="row g-4 mb-4">
         <div class="col-lg-3 col-md-6">
-            <div class="card bg-primary text-white">
+            <div class="card stats-card-primary text-white">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-title text-white-50">Active Offers</h6>
+                            <h6 class="card-title">Active Offers</h6>
                             <h2 class="mb-0">{{ special_offers|length }}</h2>
                         </div>
-                        <i class="bi bi-fire fs-1 opacity-50"></i>
+                        <i class="bi bi-fire fs-1"></i>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
-            <div class="card bg-success text-white">
+            <div class="card stats-card-success text-white">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-title text-white-50">Available Products</h6>
+                            <h6 class="card-title">Available Products</h6>
                             <h2 class="mb-0">{{ all_products|length }}</h2>
                         </div>
-                        <i class="bi bi-box-seam fs-1 opacity-50"></i>
+                        <i class="bi bi-box-seam fs-1"></i>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
-            <div class="card bg-warning text-white">
+            <div class="card stats-card-warning text-white">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-title text-white-50">With Banners</h6>
+                            <h6 class="card-title">With Banners</h6>
                             <h2 class="mb-0">{{ special_offers|selectattr('banner_image')|list|length }}</h2>
                         </div>
-                        <i class="bi bi-image fs-1 opacity-50"></i>
+                        <i class="bi bi-image fs-1"></i>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
-            <div class="card bg-info text-white">
+            <div class="card stats-card-info text-white">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-title text-white-50">Homepage Slots</h6>
+                            <h6 class="card-title">Homepage Slots</h6>
                             <h2 class="mb-0">5</h2>
                         </div>
-                        <i class="bi bi-grid-3x3-gap fs-1 opacity-50"></i>
+                        <i class="bi bi-grid-3x3-gap fs-1"></i>
                     </div>
                 </div>
             </div>

@@ -9,53 +9,53 @@
     <!-- Stats Cards -->
     <div class="row g-4 mb-4">
         <div class="col-lg-3 col-md-6">
-            <div class="card bg-primary text-white">
+            <div class="card stats-card-primary text-white">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-title text-white-50">Total Users</h6>
+                            <h6 class="card-title">Total Users</h6>
                             <h2 class="mb-0">{{ users|length }}</h2>
                         </div>
-                        <i class="bi bi-people fs-1 opacity-50"></i>
+                        <i class="bi bi-people fs-1"></i>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
-            <div class="card bg-success text-white">
+            <div class="card stats-card-success text-white">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-title text-white-50">Active Users</h6>
+                            <h6 class="card-title">Active Users</h6>
                             <h2 class="mb-0">{{ users|selectattr('is_active', 'equalto', 1)|list|length }}</h2>
                         </div>
-                        <i class="bi bi-person-check fs-1 opacity-50"></i>
+                        <i class="bi bi-person-check fs-1"></i>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
-            <div class="card bg-warning text-white">
+            <div class="card stats-card-warning text-white">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-title text-white-50">Inactive Users</h6>
+                            <h6 class="card-title">Inactive Users</h6>
                             <h2 class="mb-0">{{ users|selectattr('is_active', 'equalto', 0)|list|length }}</h2>
                         </div>
-                        <i class="bi bi-person-x fs-1 opacity-50"></i>
+                        <i class="bi bi-person-x fs-1"></i>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
-            <div class="card bg-info text-white">
+            <div class="card stats-card-info text-white">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-title text-white-50">Admin Users</h6>
+                            <h6 class="card-title">Admin Users</h6>
                             <h2 class="mb-0">{{ users|selectattr('is_admin', 'equalto', 1)|list|length }}</h2>
                         </div>
-                        <i class="bi bi-shield-check fs-1 opacity-50"></i>
+                        <i class="bi bi-shield-check fs-1"></i>
                     </div>
                 </div>
             </div>

@@ -9,53 +9,53 @@
     <!-- Stats Cards -->
     <div class="row g-4 mb-4">
         <div class="col-lg-3 col-md-6">
-            <div class="card bg-primary text-white">
+            <div class="card stats-card-primary text-white">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-title text-white-50">Total Messages</h6>
+                            <h6 class="card-title">Total Messages</h6>
                             <h2 class="mb-0">{{ messages|length }}</h2>
                         </div>
-                        <i class="bi bi-envelope fs-1 opacity-50"></i>
+                        <i class="bi bi-envelope fs-1"></i>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
-            <div class="card bg-warning text-white">
+            <div class="card stats-card-warning text-white">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-title text-white-50">New Messages</h6>
+                            <h6 class="card-title">New Messages</h6>
                             <h2 class="mb-0">{{ messages|selectattr('status', 'equalto', 'new')|list|length }}</h2>
                         </div>
-                        <i class="bi bi-envelope-exclamation fs-1 opacity-50"></i>
+                        <i class="bi bi-envelope-exclamation fs-1"></i>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
-            <div class="card bg-success text-white">
+            <div class="card stats-card-success text-white">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-title text-white-50">Read Messages</h6>
+                            <h6 class="card-title">Read Messages</h6>
                             <h2 class="mb-0">{{ messages|selectattr('status', 'equalto', 'read')|list|length }}</h2>
                         </div>
-                        <i class="bi bi-envelope-check fs-1 opacity-50"></i>
+                        <i class="bi bi-envelope-check fs-1"></i>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
-            <div class="card bg-info text-white">
+            <div class="card stats-card-info text-white">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-title text-white-50">Replied</h6>
+                            <h6 class="card-title">Replied</h6>
                             <h2 class="mb-0">{{ messages|selectattr('status', 'equalto', 'replied')|list|length }}</h2>
                         </div>
-                        <i class="bi bi-reply fs-1 opacity-50"></i>
+                        <i class="bi bi-reply fs-1"></i>
                     </div>
                 </div>
             </div>
