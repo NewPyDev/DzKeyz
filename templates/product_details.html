@@ -91,6 +91,11 @@ delivery' }}{% endblock %}
                 <!-- Product Header -->
                 <div class="mb-4">
                     <div class="d-flex align-items-center mb-2">
+                        {% if product.price_dzd == 0 %}
+                        <span class="badge bg-success me-2" style="font-size: 1rem; padding: 0.5rem 1rem;">
+                            <i class="bi bi-gift me-1"></i>FREE PRODUCT
+                        </span>
+                        {% endif %}
                         <span class="badge bg-{{ 'primary' if product.type == 'key' else 'success' }} me-2">
                             {{ 'License Key' if product.type == 'key' else 'Digital File' }}
                         </span>
@@ -114,8 +119,12 @@ delivery' }}{% endblock %}
                     <h1 class="display-5 fw-bold mb-3">{{ product.name }}</h1>
 
                     <div class="mb-4">
+                        {% if product.price_dzd == 0 %}
+                        <span class="display-4 fw-bold text-success">FREE</span>
+                        {% else %}
                         <span class="display-4 fw-bold text-primary">{{ "{:,.0f}".format(product.price_dzd) }}
                             DZD</span>
+                        {% endif %}
                     </div>
                 </div>
 
@@ -163,9 +172,15 @@ delivery' }}{% endblock %}
                 <!-- Purchase Button -->
                 <div class="d-grid gap-2 mb-4">
                     {% if product.type == 'file' or product.stock_count > 0 %}
-                    <a href="{{ url_for('buy_product', product_id=product.id) }}" class="btn btn-primary btn-lg">
-                        <i class="bi bi-cart-plus me-2"></i>Buy Now - {{ "{:,.0f}".format(product.price_dzd) }} DZD
-                    </a>
+                        {% if product.price_dzd == 0 %}
+                        <a href="{{ url_for('buy_product', product_id=product.id) }}" class="btn btn-success btn-lg">
+                            <i class="bi bi-gift me-2"></i>Get for Free
+                        </a>
+                        {% else %}
+                        <a href="{{ url_for('buy_product', product_id=product.id) }}" class="btn btn-primary btn-lg">
+                            <i class="bi bi-cart-plus me-2"></i>Buy Now - {{ "{:,.0f}".format(product.price_dzd) }} DZD
+                        </a>
+                        {% endif %}
                     {% else %}
                     <button class="btn btn-secondary btn-lg" disabled>
                         <i class="bi bi-x-circle me-2"></i>Out of Stock

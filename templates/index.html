@@ -343,9 +343,16 @@
                                     {{ product.name }}
                                 </a>
                             </h5>
-                            <span class="badge bg-{{ 'primary' if product.type == 'key' else 'success' }} ms-2">
-                                {{ 'License Key' if product.type == 'key' else 'Digital File' }}
-                            </span>
+                            <div class="d-flex flex-column gap-1 ms-2">
+                                {% if product.price_dzd == 0 %}
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-gift me-1"></i>FREE
+                                    </span>
+                                {% endif %}
+                                <span class="badge bg-{{ 'primary' if product.type == 'key' else 'success' }}">
+                                    {{ 'License Key' if product.type == 'key' else 'Digital File' }}
+                                </span>
+                            </div>
                         </div>
                         
                         <!-- Category and Tags -->
@@ -374,7 +381,11 @@
                         
                         <div class="mt-auto">
                             <div class="d-flex justify-content-between align-items-center mb-3">
-                                <div class="product-price">{{ "{:,.0f}".format(product.price_dzd) }} DZD</div>
+                                {% if product.price_dzd == 0 %}
+                                    <div class="product-price text-success fw-bold">FREE</div>
+                                {% else %}
+                                    <div class="product-price">{{ "{:,.0f}".format(product.price_dzd) }} DZD</div>
+                                {% endif %}
                                 {% if product.type == 'key' %}
                                     {% if product.stock_count > 0 %}
                                         <small class="text-success">
@@ -397,9 +408,15 @@
                                     <i class="bi bi-eye me-2"></i>View Details
                                 </a>
                                 {% if product.type == 'file' or product.stock_count > 0 %}
-                                    <a href="{{ url_for('buy_product', product_id=product.id) }}" class="btn btn-primary flex-fill">
-                                        <i class="bi bi-cart-plus me-2"></i>Buy Now
-                                    </a>
+                                    {% if product.price_dzd == 0 %}
+                                        <a href="{{ url_for('buy_product', product_id=product.id) }}" class="btn btn-success flex-fill">
+                                            <i class="bi bi-gift me-2"></i>Get for Free
+                                        </a>
+                                    {% else %}
+                                        <a href="{{ url_for('buy_product', product_id=product.id) }}" class="btn btn-primary flex-fill">
+                                            <i class="bi bi-cart-plus me-2"></i>Buy Now
+                                        </a>
+                                    {% endif %}
                                 {% else %}
                                     <button class="btn btn-secondary flex-fill" disabled>
                                         <i class="bi bi-x-circle me-2"></i>Out of Stock

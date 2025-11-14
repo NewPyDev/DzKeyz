@@ -154,7 +154,13 @@
                                     </span>
                                 </div>
                             </td>
-                            <td class="fw-bold text-primary">{{ "{:,.0f}".format(order.price_dzd) }} DZD</td>
+                            <td class="fw-bold {% if order.price_dzd == 0 %}text-success{% else %}text-primary{% endif %}">
+                                {% if order.price_dzd == 0 %}
+                                FREE
+                                {% else %}
+                                {{ "{:,.0f}".format(order.price_dzd) }} DZD
+                                {% endif %}
+                            </td>
                             <td>
                                 {% if order.status == 'pending' %}
                                 <span class="badge bg-warning">

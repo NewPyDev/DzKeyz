@@ -61,6 +61,12 @@
                             <div class="col-md-6">
                                 <label for="price_dzd" class="form-label">Price (DZD)</label>
                                 <input type="number" class="form-control" id="price_dzd" name="price_dzd" step="0.01" value="{{ product.price_dzd }}" required>
+                                <div class="form-check mt-2">
+                                    <input class="form-check-input" type="checkbox" id="is_free" name="is_free" {% if product.price_dzd == 0 %}checked{% endif %} onchange="toggleFreeProduct()">
+                                    <label class="form-check-label" for="is_free">
+                                        <strong>This is a free product (price = 0)</strong>
+                                    </label>
+                                </div>
                             </div>
                             <div class="col-12">
                                 <label for="description" class="form-label">Description</label>
@@ -320,7 +326,25 @@
 
 {% block extra_js %}
 <script>
+// Free product toggle function
+function toggleFreeProduct() {
+    const isFreeCheckbox = document.getElementById('is_free');
+    const priceInput = document.getElementById('price_dzd');
+    
+    if (isFreeCheckbox.checked) {
+        priceInput.value = '0.00';
+        priceInput.readOnly = true;
+        priceInput.style.backgroundColor = '#e9ecef';
+    } else {
+        priceInput.readOnly = false;
+        priceInput.style.backgroundColor = '';
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize free product state on page load
+    toggleFreeProduct();
+    
     // File upload preview
     const fileInput = document.getElementById('product_file');
     if (fileInput) {

@@ -1331,26 +1331,75 @@ def submit_order():
     payment_method = request.form.get('payment_method')
     transaction_id = request.form.get('transaction_id')
     
-    # Validate payment proof is required
-    if 'payment_proof' not in request.files or not request.files['payment_proof'].filename:
-        flash('Payment proof is required to process your order.', 'error')
-        return redirect(url_for('buy_product', product_id=product_id))
+    # Get product info to check if it's free
+    conn = get_db()
+    product = conn.execute('SELECT name, price_dzd, type, file_or_key_path FROM products WHERE id = ?', (product_id,)).fetchone()
     
-    # Handle file upload
+    if not product:
+        conn.close()
+        flash('Product not found', 'error')
+        return redirect(url_for('index'))
+    
+    is_free_product = product['price_dzd'] == 0
+    
+    # For paid products, validate payment proof is required
+    if not is_free_product:
+        if 'payment_proof' not in request.files or not request.files['payment_proof'].filename:
+            conn.close()
+            flash('Payment proof is required to process your order.', 'error')
+            return redirect(url_for('buy_product', product_id=product_id))
+    
+    # Handle file upload for paid products
     payment_proof_path = None
-    file = request.files['payment_proof']
-    if file and file.filename:
-        filename = str(uuid.uuid4()) + '.' + file.filename.rsplit('.', 1)[1].lower()
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(file_path)
-        # Store just the filename, not the full path
-        payment_proof_path = filename
+    if not is_free_product and 'payment_proof' in request.files:
+        file = request.files['payment_proof']
+        if file and file.filename:
+            filename = str(uuid.uuid4()) + '.' + file.filename.rsplit('.', 1)[1].lower()
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(file_path)
+            payment_proof_path = filename
     
     # Get user_id if logged in
     user_id = session.get('user_id')
     
-    # Insert order
-    conn = get_db()
+    # For free products, auto-confirm the order
+    if is_free_product:
+        confirmation_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        cursor = conn.execute('''INSERT INTO orders 
+                                (product_id, user_id, buyer_name, email, phone, telegram_username, payment_method, 
+                                 payment_proof_path, transaction_id, status, confirmed_at) 
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+                             (product_id, user_id, buyer_name, email, phone, telegram_username, 
+                              'free', None, 'FREE-PRODUCT', 'confirmed', confirmation_time))
+        order_id = cursor.lastrowid
+        
+        # Update stock for key products
+        if product['type'] == 'key':
+            available_keys = conn.execute('SELECT COUNT(*) FROM product_keys WHERE product_id = ? AND is_used = FALSE',
+                                        (product_id,)).fetchone()[0]
+            conn.execute('UPDATE products SET stock_count = ? WHERE id = ?',
+                        (available_keys, product_id))
+        
+        conn.commit()
+        
+        # Get full order data for delivery
+        order_data = conn.execute('''SELECT o.*, p.name as product_name, p.type, p.file_or_key_path, p.price_dzd
+                                     FROM orders o 
+                                     JOIN products p ON o.product_id = p.id 
+                                     WHERE o.id = ?''', (order_id,)).fetchone()
+        conn.close()
+        
+        # Log action
+        log_action(order_id, 'free_order_auto_confirmed', f'buyer_{buyer_name}')
+        
+        # Deliver product immediately (includes receipt generation and email)
+        deliver_product(order_data)
+        
+        flash('Your free product is ready! Check your email for the download link.', 'success')
+        print(f"✅ Free order {order_id} auto-confirmed and delivered")
+        return redirect(url_for('order_confirmation', order_id=order_id))
+    
+    # For paid products, create pending order
     cursor = conn.execute('''INSERT INTO orders 
                             (product_id, user_id, buyer_name, email, phone, telegram_username, payment_method, 
                              payment_proof_path, transaction_id) 
@@ -1358,9 +1407,6 @@ def submit_order():
                          (product_id, user_id, buyer_name, email, phone, telegram_username, payment_method,
                           payment_proof_path, transaction_id))
     order_id = cursor.lastrowid
-    
-    # Get product info for notification
-    product = conn.execute('SELECT name, price_dzd FROM products WHERE id = ?', (product_id,)).fetchone()
     conn.commit()
     conn.close()
     
@@ -3388,7 +3434,8 @@ def add_product():
     if request.method == 'POST':
         name = request.form.get('name')
         description = request.form.get('description')
-        price_dzd = float(request.form.get('price_dzd'))
+        is_free = 'is_free' in request.form
+        price_dzd = 0.0 if is_free else float(request.form.get('price_dzd'))
         product_type = request.form.get('type')
         category_id = request.form.get('category_id')
         tag_ids = request.form.getlist('tag_ids')
@@ -3474,7 +3521,8 @@ def edit_product(product_id):
     if request.method == 'POST':
         name = request.form.get('name')
         description = request.form.get('description')
-        price_dzd = float(request.form.get('price_dzd'))
+        is_free = 'is_free' in request.form
+        price_dzd = 0.0 if is_free else float(request.form.get('price_dzd'))
         
         # Get current product info
         product = conn.execute('SELECT * FROM products WHERE id = ?', (product_id,)).fetchone()

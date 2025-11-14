@@ -81,9 +81,15 @@
                     <div class="row g-3 mb-4">
                         <div class="col-6">
                             <div class="text-center p-3 bg-light rounded">
+                                {% if product.price_dzd == 0 %}
+                                <i class="bi bi-gift text-success fs-4 d-block mb-2"></i>
+                                <div class="fw-bold fs-4 text-success">FREE</div>
+                                <small class="text-muted">No Payment Required</small>
+                                {% else %}
                                 <i class="bi bi-currency-exchange text-primary fs-4 d-block mb-2"></i>
                                 <div class="fw-bold fs-4 text-primary">{{ "{:,.0f}".format(product.price_dzd) }} DZD</div>
                                 <small class="text-muted">Price</small>
+                                {% endif %}
                             </div>
                         </div>
                         <div class="col-6">
@@ -122,10 +128,17 @@
                     </div>
 
                     <!-- Delivery Info -->
+                    {% if product.price_dzd == 0 %}
+                    <div class="alert alert-success">
+                        <i class="bi bi-gift me-2"></i>
+                        <strong>Free Product:</strong> Your {{ 'license key' if product.type == 'key' else 'download link' }} will be delivered instantly to your email!
+                    </div>
+                    {% else %}
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle me-2"></i>
                         <strong>Delivery:</strong> Your {{ 'license key' if product.type == 'key' else 'download link' }} will be sent within 5-15 minutes after payment confirmation.
                     </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -180,7 +193,8 @@
                         </div>
 
                         <!-- Payment Information -->
-                        <div class="mb-4">
+                        {% if product.price_dzd > 0 %}
+                        <div class="mb-4" id="paymentSection">
                             <h5 class="fw-semibold mb-3">
                                 <i class="bi bi-credit-card me-2"></i>Payment Information
                             </h5>
@@ -251,27 +265,53 @@
                                 <small class="text-muted">If available, enter the transaction reference from your payment</small>
                             </div>
                         </div>
+                        {% else %}
+                        <!-- Free Product Notice -->
+                        <div class="mb-4">
+                            <div class="alert alert-success">
+                                <h5 class="fw-semibold">
+                                    <i class="bi bi-gift me-2"></i>Free Product - No Payment Required!
+                                </h5>
+                                <p class="mb-0">This is a free product. Simply fill in your information above and click the button below to get instant access!</p>
+                            </div>
+                        </div>
+                        {% endif %}
 
                         <!-- Order Summary -->
                         <div class="bg-light rounded p-4 mb-4">
                             <h6 class="fw-semibold mb-3">Order Summary</h6>
                             <div class="d-flex justify-content-between mb-2">
                                 <span>{{ product.name }}</span>
+                                {% if product.price_dzd == 0 %}
+                                <span class="text-success fw-bold">FREE</span>
+                                {% else %}
                                 <span>{{ "{:,.0f}".format(product.price_dzd) }} DZD</span>
+                                {% endif %}
                             </div>
                             <hr>
                             <div class="d-flex justify-content-between fw-bold fs-5">
                                 <span>Total</span>
+                                {% if product.price_dzd == 0 %}
+                                <span class="text-success">FREE</span>
+                                {% else %}
                                 <span class="text-primary">{{ "{:,.0f}".format(product.price_dzd) }} DZD</span>
+                                {% endif %}
                             </div>
                         </div>
 
                         <!-- Submit Button -->
                         <div class="d-grid gap-2">
+                            {% if product.price_dzd == 0 %}
+                            <button type="submit" class="btn btn-success btn-lg" id="submitBtn">
+                                <i class="bi bi-gift me-2"></i>
+                                Get Your Free Product Now
+                            </button>
+                            {% else %}
                             <button type="submit" class="btn btn-success btn-lg" id="submitBtn">
                                 <i class="bi bi-shield-check me-2"></i>
                                 Complete Secure Purchase
                             </button>
+                            {% endif %}
                             <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
                                 <i class="bi bi-arrow-left me-2"></i>Back to Products
                             </a>
@@ -294,48 +334,59 @@
 
 {% block extra_js %}
 <script>
+const isFreeProduct = {% if product.price_dzd == 0 %}true{% else %}false{% endif %};
+
 document.getElementById('purchaseForm').addEventListener('submit', function(e) {
     const submitBtn = document.getElementById('submitBtn');
     const paymentProof = document.getElementById('payment_proof');
     
-    // Validate file upload
-    if (!paymentProof.files.length) {
-        e.preventDefault();
-        alert('Please upload your payment proof screenshot.');
-        return;
-    }
-    
-    // Check file size (10MB limit)
-    if (paymentProof.files[0].size > 10 * 1024 * 1024) {
-        e.preventDefault();
-        alert('File size must be less than 10MB.');
-        return;
+    // Only validate payment proof for paid products
+    if (!isFreeProduct) {
+        // Validate file upload
+        if (!paymentProof.files.length) {
+            e.preventDefault();
+            alert('Please upload your payment proof screenshot.');
+            return;
+        }
+        
+        // Check file size (10MB limit)
+        if (paymentProof.files[0].size > 10 * 1024 * 1024) {
+            e.preventDefault();
+            alert('File size must be less than 10MB.');
+            return;
+        }
     }
     
     // Show loading state
     submitBtn.disabled = true;
-    submitBtn.innerHTML = '<span class="spinner me-2"></span>Processing Order...';
-});
-
-// File upload preview
-document.getElementById('payment_proof').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    const existingPreview = document.querySelector('.file-preview');
-    if (existingPreview) existingPreview.remove();
-    
-    if (file) {
-        const preview = document.createElement('div');
-        preview.className = 'mt-2 p-3 bg-success bg-opacity-10 border border-success rounded file-preview';
-        preview.innerHTML = `
-            <div class="d-flex align-items-center">
-                <i class="bi bi-check-circle text-success me-2"></i>
-                <span class="text-success fw-medium">${file.name}</span>
-                <span class="text-muted ms-2">(${(file.size / 1024 / 1024).toFixed(2)} MB)</span>
-            </div>
-        `;
-        e.target.parentNode.appendChild(preview);
+    if (isFreeProduct) {
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Getting Your Free Product...';
+    } else {
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing Order...';
     }
 });
+
+// File upload preview (only for paid products)
+if (!isFreeProduct) {
+    document.getElementById('payment_proof').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        const existingPreview = document.querySelector('.file-preview');
+        if (existingPreview) existingPreview.remove();
+        
+        if (file) {
+            const preview = document.createElement('div');
+            preview.className = 'mt-2 p-3 bg-success bg-opacity-10 border border-success rounded file-preview';
+            preview.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-check-circle text-success me-2"></i>
+                    <span class="text-success fw-medium">${file.name}</span>
+                    <span class="text-muted ms-2">(${(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+                </div>
+            `;
+            e.target.parentNode.appendChild(preview);
+        }
+    });
+}
 
 // Update progress steps
 function updateProgressStep(step) {
