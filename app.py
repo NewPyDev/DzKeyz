@@ -547,6 +547,25 @@ def init_db():
         admin_hash = generate_password_hash('admin123')
         c.execute('INSERT INTO admin (username, password_hash) VALUES (?, ?)', ('admin', admin_hash))
     
+    # Create indexes for performance optimization
+    try:
+        # Optimize homepage products query
+        c.execute('CREATE INDEX IF NOT EXISTS idx_products_visible_featured ON products(is_visible, is_featured, created_at)')
+
+        # Optimize order lookups
+        c.execute('CREATE INDEX IF NOT EXISTS idx_orders_product_id ON orders(product_id)')
+        c.execute('CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id)')
+
+        # Optimize product stock checks
+        c.execute('CREATE INDEX IF NOT EXISTS idx_product_keys_status ON product_keys(product_id, is_used)')
+
+        # Optimize reviews lookup
+        c.execute('CREATE INDEX IF NOT EXISTS idx_reviews_product ON reviews(product_id)')
+
+        print("✅ Database indexes created/verified")
+    except Exception as e:
+        print(f"⚠️ Error creating indexes: {e}")
+
     conn.commit()
     conn.close()
 
