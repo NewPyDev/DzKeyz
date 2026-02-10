@@ -485,6 +485,17 @@ def init_db():
         FOREIGN KEY (product_id) REFERENCES products (id),
         UNIQUE(user_id, product_id)
     )''')
+
+    # Wishlists table
+    c.execute('''CREATE TABLE IF NOT EXISTS wishlists (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        product_id INTEGER NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users (id),
+        FOREIGN KEY (product_id) REFERENCES products (id),
+        UNIQUE(user_id, product_id)
+    )''')
     
     # Social login providers
     c.execute('''CREATE TABLE IF NOT EXISTS user_social_accounts (
@@ -1351,10 +1362,18 @@ def product_details(product_id):
         if has_bought and not has_reviewed:
             can_review = True
 
+    # Check if wishlisted
+    is_wishlisted = False
+    if session.get('user_id'):
+        wishlist_item = conn.execute('SELECT id FROM wishlists WHERE user_id = ? AND product_id = ?',
+                                   (session.get('user_id'), product_id)).fetchone()
+        if wishlist_item:
+            is_wishlisted = True
+
     conn.close()
     
     return render_template('product_details.html', product=product, related_products=related_products,
-                         reviews=reviews, average_rating=average_rating, review_count=review_count, can_review=can_review)
+                         reviews=reviews, average_rating=average_rating, review_count=review_count, can_review=can_review, is_wishlisted=is_wishlisted)
 
 @app.route('/buy/<int:product_id>')
 def buy_product(product_id):
@@ -1968,6 +1987,73 @@ def my_orders():
     conn.close()
     
     return render_template('my_orders.html', orders=orders_list)
+
+@app.route('/wishlist')
+@login_required
+def wishlist():
+    user_id = session.get('user_id')
+
+    conn = get_db()
+    products = conn.execute('''
+        SELECT p.*, w.created_at as wished_at
+        FROM products p
+        JOIN wishlists w ON p.id = w.product_id
+        WHERE w.user_id = ?
+        ORDER BY w.created_at DESC
+    ''', (user_id,)).fetchall()
+
+    # Process product data (images, etc.)
+    wishlist_items = []
+    for product in products:
+        item = dict(product)
+        item['image_urls'] = get_product_images(item['images'])
+        item['main_image'] = item['image_urls'][0] if item['image_urls'] else None
+
+        # Check stock for key products
+        if item['type'] == 'key':
+            available_keys = conn.execute(
+                'SELECT COUNT(*) FROM product_keys WHERE product_id = ? AND is_used = FALSE',
+                (item['id'],)
+            ).fetchone()[0]
+            item['stock_count'] = available_keys
+
+        wishlist_items.append(item)
+
+    conn.close()
+
+    return render_template('wishlist.html', products=wishlist_items)
+
+@app.route('/wishlist/add/<int:product_id>', methods=['POST'])
+@login_required
+def add_to_wishlist(product_id):
+    user_id = session.get('user_id')
+    conn = get_db()
+
+    try:
+        conn.execute('INSERT INTO wishlists (user_id, product_id) VALUES (?, ?)', (user_id, product_id))
+        conn.commit()
+        flash('Product added to your wishlist!', 'success')
+    except sqlite3.IntegrityError:
+        flash('Product is already in your wishlist.', 'info')
+    except Exception as e:
+        flash('An error occurred. Please try again.', 'error')
+        print(f"Wishlist add error: {e}")
+
+    conn.close()
+    return redirect(request.referrer or url_for('wishlist'))
+
+@app.route('/wishlist/remove/<int:product_id>', methods=['POST'])
+@login_required
+def remove_from_wishlist(product_id):
+    user_id = session.get('user_id')
+    conn = get_db()
+
+    conn.execute('DELETE FROM wishlists WHERE user_id = ? AND product_id = ?', (user_id, product_id))
+    conn.commit()
+    conn.close()
+
+    flash('Product removed from your wishlist.', 'success')
+    return redirect(request.referrer or url_for('wishlist'))
 
 @app.route('/forgot-password', methods=['GET', 'POST'])
 def forgot_password():

@@ -169,22 +169,44 @@ delivery' }}{% endblock %}
                     </div>
                 </div>
 
-                <!-- Purchase Button -->
-                <div class="d-grid gap-2 mb-4">
-                    {% if product.type == 'file' or product.stock_count > 0 %}
-                        {% if product.price_dzd == 0 %}
-                        <a href="{{ url_for('buy_product', product_id=product.id) }}" class="btn btn-success btn-lg">
-                            <i class="bi bi-gift me-2"></i>Get for Free
-                        </a>
+                <!-- Purchase and Wishlist Buttons -->
+                <div class="d-flex gap-2 mb-4">
+                    <div class="flex-grow-1">
+                        {% if product.type == 'file' or product.stock_count > 0 %}
+                            {% if product.price_dzd == 0 %}
+                            <a href="{{ url_for('buy_product', product_id=product.id) }}" class="btn btn-success btn-lg w-100">
+                                <i class="bi bi-gift me-2"></i>Get for Free
+                            </a>
+                            {% else %}
+                            <a href="{{ url_for('buy_product', product_id=product.id) }}" class="btn btn-primary btn-lg w-100">
+                                <i class="bi bi-cart-plus me-2"></i>Buy Now - {{ "{:,.0f}".format(product.price_dzd) }} DZD
+                            </a>
+                            {% endif %}
                         {% else %}
-                        <a href="{{ url_for('buy_product', product_id=product.id) }}" class="btn btn-primary btn-lg">
-                            <i class="bi bi-cart-plus me-2"></i>Buy Now - {{ "{:,.0f}".format(product.price_dzd) }} DZD
-                        </a>
+                        <button class="btn btn-secondary btn-lg w-100" disabled>
+                            <i class="bi bi-x-circle me-2"></i>Out of Stock
+                        </button>
+                        {% endif %}
+                    </div>
+
+                    {% if session.get('user_id') %}
+                        {% if is_wishlisted %}
+                        <form action="{{ url_for('remove_from_wishlist', product_id=product.id) }}" method="POST">
+                            <button type="submit" class="btn btn-outline-danger btn-lg" title="Remove from Wishlist">
+                                <i class="bi bi-heart-fill"></i>
+                            </button>
+                        </form>
+                        {% else %}
+                        <form action="{{ url_for('add_to_wishlist', product_id=product.id) }}" method="POST">
+                            <button type="submit" class="btn btn-outline-secondary btn-lg" title="Add to Wishlist">
+                                <i class="bi bi-heart"></i>
+                            </button>
+                        </form>
                         {% endif %}
                     {% else %}
-                    <button class="btn btn-secondary btn-lg" disabled>
-                        <i class="bi bi-x-circle me-2"></i>Out of Stock
-                    </button>
+                        <a href="{{ url_for('login', next=request.path) }}" class="btn btn-outline-secondary btn-lg" title="Login to add to Wishlist">
+                            <i class="bi bi-heart"></i>
+                        </a>
                     {% endif %}
                 </div>
 
