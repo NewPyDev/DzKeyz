@@ -472,6 +472,19 @@ def init_db():
         setting_value TEXT,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )''')
+
+    # Reviews table
+    c.execute('''CREATE TABLE IF NOT EXISTS reviews (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        product_id INTEGER NOT NULL,
+        rating INTEGER NOT NULL CHECK(rating >= 1 AND rating <= 5),
+        comment TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users (id),
+        FOREIGN KEY (product_id) REFERENCES products (id),
+        UNIQUE(user_id, product_id)
+    )''')
     
     # Social login providers
     c.execute('''CREATE TABLE IF NOT EXISTS user_social_accounts (
@@ -1293,9 +1306,55 @@ def product_details(product_id):
         related_dict['main_image'] = related_dict['image_urls'][0] if related_dict['image_urls'] else None
         related_products.append(related_dict)
     
+    # Get reviews
+    reviews_raw = conn.execute('''
+        SELECT r.*, u.name as user_name
+        FROM reviews r
+        JOIN users u ON r.user_id = u.id
+        WHERE r.product_id = ?
+        ORDER BY r.created_at DESC
+    ''', (product_id,)).fetchall()
+
+    reviews = []
+    total_rating = 0
+    for review in reviews_raw:
+        review_dict = dict(review)
+        # Format date
+        if review_dict.get('created_at'):
+            try:
+                dt = datetime.strptime(review_dict['created_at'], '%Y-%m-%d %H:%M:%S')
+                review_dict['created_at_formatted'] = dt.strftime('%B %d, %Y')
+            except:
+                review_dict['created_at_formatted'] = review_dict['created_at']
+        reviews.append(review_dict)
+        total_rating += review['rating']
+
+    review_count = len(reviews)
+    average_rating = round(total_rating / review_count, 1) if review_count > 0 else 0
+
+    # Check if current user can review
+    can_review = False
+    if session.get('user_id'):
+        user_id = session.get('user_id')
+
+        # Check if bought
+        has_bought = conn.execute('''
+            SELECT id FROM orders
+            WHERE user_id = ? AND product_id = ? AND status = 'confirmed'
+        ''', (user_id, product_id)).fetchone()
+
+        # Check if already reviewed
+        has_reviewed = conn.execute('''
+            SELECT id FROM reviews WHERE user_id = ? AND product_id = ?
+        ''', (user_id, product_id)).fetchone()
+
+        if has_bought and not has_reviewed:
+            can_review = True
+
     conn.close()
     
-    return render_template('product_details.html', product=product, related_products=related_products)
+    return render_template('product_details.html', product=product, related_products=related_products,
+                         reviews=reviews, average_rating=average_rating, review_count=review_count, can_review=can_review)
 
 @app.route('/buy/<int:product_id>')
 def buy_product(product_id):
@@ -1449,6 +1508,67 @@ If you have any questions, please contact our support team."""
     flash('Payment received. Waiting for admin confirmation.', 'success')
     print(f"✅ Order {order_id} created successfully, redirecting to confirmation page")
     return redirect(url_for('order_confirmation', order_id=order_id))
+
+@app.route('/submit_review/<int:product_id>', methods=['POST'])
+@login_required
+def submit_review(product_id):
+    try:
+        user_id = session.get('user_id')
+        rating = request.form.get('rating')
+        comment = request.form.get('comment', '').strip()
+
+        # Validation
+        if not rating or not rating.isdigit() or int(rating) < 1 or int(rating) > 5:
+            flash('Invalid rating.', 'error')
+            return redirect(url_for('product_details', product_id=product_id))
+
+        rating = int(rating)
+
+        conn = get_db()
+
+        # Check if product exists
+        product = conn.execute('SELECT id FROM products WHERE id = ?', (product_id,)).fetchone()
+        if not product:
+            conn.close()
+            flash('Product not found.', 'error')
+            return redirect(url_for('index'))
+
+        # Check if user has purchased the product
+        order = conn.execute('''
+            SELECT id FROM orders
+            WHERE user_id = ? AND product_id = ? AND status = 'confirmed'
+        ''', (user_id, product_id)).fetchone()
+
+        if not order:
+            conn.close()
+            flash('You can only review products you have purchased.', 'error')
+            return redirect(url_for('product_details', product_id=product_id))
+
+        # Check if review already exists
+        existing_review = conn.execute('''
+            SELECT id FROM reviews WHERE user_id = ? AND product_id = ?
+        ''', (user_id, product_id)).fetchone()
+
+        if existing_review:
+            conn.close()
+            flash('You have already reviewed this product.', 'warning')
+            return redirect(url_for('product_details', product_id=product_id))
+
+        # Insert review
+        conn.execute('''
+            INSERT INTO reviews (user_id, product_id, rating, comment)
+            VALUES (?, ?, ?, ?)
+        ''', (user_id, product_id, rating, comment))
+        conn.commit()
+        conn.close()
+
+        flash('Thank you for your review!', 'success')
+
+    except Exception as e:
+        print(f"Error submitting review: {e}")
+        flash('An error occurred. Please try again.', 'error')
+
+    return redirect(url_for('product_details', product_id=product_id))
 
 @app.route('/contact', methods=['POST'])
 def contact_form():
