@@ -315,7 +315,18 @@ def init_db():
         FOREIGN KEY (used_by_order_id) REFERENCES orders (id)
     )''')
     
-    # Orders table
+    # Check for legacy schema (missing 'free' in payment_method check)
+    legacy_schema = False
+    try:
+        schema = c.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='orders'").fetchone()
+        if schema and "CHECK(payment_method IN ('baridimob', 'ccp'))" in schema[0]:
+            legacy_schema = True
+            print("🔄 Detected legacy orders table schema, preparing migration...")
+            c.execute("ALTER TABLE orders RENAME TO orders_backup")
+    except Exception as e:
+        print(f"⚠️ Error checking schema: {e}")
+
+    # Orders table (Updated with 'free' payment method and receipt_path)
     c.execute('''CREATE TABLE IF NOT EXISTS orders (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         product_id INTEGER,
@@ -324,15 +335,38 @@ def init_db():
         email TEXT NOT NULL,
         phone TEXT,
         telegram_username TEXT,
-        payment_method TEXT CHECK(payment_method IN ('baridimob', 'ccp')),
+        payment_method TEXT CHECK(payment_method IN ('baridimob', 'ccp', 'free')),
         payment_proof_path TEXT,
         transaction_id TEXT,
         status TEXT CHECK(status IN ('pending', 'confirmed', 'rejected')) DEFAULT 'pending',
+        receipt_path TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         confirmed_at TIMESTAMP,
         FOREIGN KEY (product_id) REFERENCES products (id),
         FOREIGN KEY (user_id) REFERENCES users (id)
     )''')
+
+    # Copy data if migration happened
+    if legacy_schema:
+        print("🔄 Migrating data from backup...")
+        try:
+            # Get columns from backup
+            columns_info = c.execute("PRAGMA table_info(orders_backup)").fetchall()
+            columns = [col[1] for col in columns_info]
+            columns_str = ", ".join(columns)
+
+            c.execute(f"INSERT INTO orders ({columns_str}) SELECT {columns_str} FROM orders_backup")
+            c.execute("DROP TABLE orders_backup")
+            print("✅ Orders table migrated successfully")
+        except Exception as e:
+            print(f"❌ Migration failed: {e}")
+            # Attempt to restore backup
+            try:
+                c.execute("DROP TABLE IF EXISTS orders")
+                c.execute("ALTER TABLE orders_backup RENAME TO orders")
+                print("↩️ Restored backup due to failure")
+            except Exception as restore_error:
+                print(f"❌ Critical error restoring backup: {restore_error}")
     
     # Add phone column if it doesn't exist (for existing databases)
     try:
